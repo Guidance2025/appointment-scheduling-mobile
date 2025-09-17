@@ -32,6 +32,7 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env
 
 # typescript
 *.tsbuildinfo
@@ -39,3 +40,67 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# JSON files (add this line)
+*.json
+
+# Additional recommendations:
+# Lock files (uncomment the one you DON'T use)
+# package-lock.json  # if using yarn
+# yarn.lock         # if using npm
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# Temporary folders
+tmp/
+temp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# React Native specific
+*.jsbundle
+
+# Flipper
+ios/Pods/
+
+# CocoaPods
+ios/Pods/
+ios/Podfile.lock
+
+# Fastlane
+ios/fastlane/report.xml
+ios/fastlane/Preview.html
+ios/fastlane/screenshots
+ios/fastlane/test_output
+
+# Bundle artifacts
+*.jsbundle
+
+# Watchman
+.watchmanconfig
