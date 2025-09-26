@@ -1,3 +1,4 @@
+/* 
 import React, { useState } from 'react';
 import LoginStyles from "../styles/LoginStyles";
 import GabayLogo from "../assets/Gabay.png"; 
@@ -78,4 +79,4 @@ const LoginScreen = () => {
   );
 };
 
-export default LoginScreen;
+export default LoginScreen; */
