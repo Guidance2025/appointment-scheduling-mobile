@@ -1,71 +1,83 @@
 import React from "react";
-import { View, Text, Image, TouchableOpacity, SafeAreaView, ScrollView } from "react-native";
-import { Feather, Ionicons, MaterialIcons } from "@expo/vector-icons";
+import {
+  SafeAreaView,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+} from "react-native";
+import { Ionicons, Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import styles from "../styles/DashboardStyles";
 
-const counselingLogo = require("../assets/counseling_image.jpg");
+const counselingLogo = require("../assets/counseling_image.jpg"); 
 
-export default function Dashboard({ onViewNotifications }) {
+const appointments = [
+  { id: 1, date: "Oct 05, 2025 • 10:00 AM", topic: "Career Guidance", counselor: "Ms. Ramirez" },
+  { id: 2, date: "Oct 12, 2025 • 02:30 PM", topic: "Personal Counseling", counselor: "Mr. Santos" },
+  { id: 3, date: "Oct 18, 2025 • 09:00 AM", topic: "Group Session — Stress Mgmt", counselor: "Ms. Flores" },
+  { id: 4, date: "Oct 25, 2025 • 11:15 AM", topic: "Exit Interview", counselor: "Mr. Mendoza" },
+];
+
+export default function Dashboard({ onNavigate }) {
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        
-        {/* Logo */}
-        <Image source={counselingLogo} style={styles.logo} resizeMode="contain" />
-        <Text style={styles.welcomeText}>Welcome to Guidance and Counseling</Text>
-
-        {/* Shortcut Buttons */}
-        <View style={styles.content}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalScrollContent}
-          >
-            <TouchableOpacity style={styles.section}>
-              <MaterialIcons name="schedule" size={32} color="#4CAF50" style={styles.sectionIcon} />
-              <Text style={styles.title}>Appointment Scheduling</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.section}>
-              <Feather name="trending-up" size={32} color="#4CAF50" style={styles.sectionIcon} />
-              <Text style={styles.title}>Mood Trends</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.section}>
-              <Ionicons name="chatbubble-outline" size={32} color="#4CAF50" style={styles.sectionIcon} />
-              <Text style={styles.title}>Exit Interview</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-
-        {/* Bottom Quote */}
-        <Text style={styles.quote}>
-          “A safe space where students are heard, guided, and supported for personal and academic growth.”
-        </Text>
-
-        {/* NAVBAR */}
-        <View style={styles.navBar}>
-          <TouchableOpacity style={[styles.navItem, styles.activeNavItem]}>
-            <Feather name="home" size={28} color="white" />
-            <Text style={[styles.navLabel, styles.activeNavLabel]}>Homepage</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.navItem}>
-            <Ionicons name="calendar-outline" size={28} color="white" />
-            <Text style={styles.navLabel}>Calendar</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.navItem}>
-            <Ionicons name="person-circle-outline" size={28} color="white" />
-            <Text style={styles.navLabel}>Profile</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.navItem} onPress={onViewNotifications}>
-            <Ionicons name="notifications-outline" size={28} color="white" />
-            <Text style={styles.navLabel}>Notifications</Text>
-          </TouchableOpacity>
-        </View>
+      {/* Top */}
+      <View style={styles.header}>
+        <Image source={counselingLogo} style={styles.logo} />
+        <TouchableOpacity onPress={() => onNavigate("notification")}>
+          <Ionicons name="notifications-outline" size={28} color="#333" />
+        </TouchableOpacity>
       </View>
+
+      <View style={styles.body}>
+        <Text style={styles.title}>Welcome to Guidance & Counseling</Text>
+        <Text style={styles.subtitle}>Your upcoming sessions</Text>
+
+        <ScrollView
+          style={styles.scrollArea}
+          contentContainerStyle={{ paddingBottom: 140 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {appointments.map((a) => (
+            <View key={a.id} style={styles.card}>
+              <View style={styles.cardLeft}>
+                <Text style={styles.cardDate}>{a.date}</Text>
+                <Text style={styles.cardTopic}>{a.topic}</Text>
+                <Text style={styles.cardCounselor}>Counselor: {a.counselor}</Text>
+              </View>
+              <View style={styles.cardRight}>
+                <TouchableOpacity style={styles.openBtn} onPress={() => onNavigate("notification")}>
+                  <Text style={styles.openBtnText}>Details</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Bottom Navbar */}
+      <View style={styles.navBar}>
+        <TouchableOpacity style={styles.navItem} onPress={() => onNavigate("dashboard")}>
+          <Feather name="home" size={24} color="#fff" />
+        
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.navItem} onPress={() => { /* placeholder */ }}>
+          <Ionicons name="calendar-outline" size={24} color="#fff" />
+          
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.navItem} onPress={() => { /* placeholder */ }}>
+          <MaterialCommunityIcons name="emoticon-happy-outline" size={24} color="#fff" />
+        
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.navItem} onPress={() => onNavigate("profile")}>
+          <Ionicons name="person-circle-outline" size={26} color="#fff" />
+         
+        </TouchableOpacity>
+      </View> 
     </SafeAreaView>
   );
 }

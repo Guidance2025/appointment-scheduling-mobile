@@ -1,109 +1,111 @@
-import React from "react";
-import { View, Text, Image, ScrollView, TouchableOpacity, SafeAreaView } from "react-native";
-import { Ionicons, MaterialIcons, Feather } from "@expo/vector-icons";
-import styles from "../styles/DashboardStyles";
+import React, { useState } from "react";
+import {
+  SafeAreaView,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Modal,
+  TouchableWithoutFeedback,
+} from "react-native";
+import { Feather, Ionicons } from "@expo/vector-icons";
+import styles from "../styles/NotificationStyles";
 
-const notifications = {
-  unseen: [
-    {
-      date: "December 12, 2024 - 1:15 PM",
-      text: "Appointment Confirmed - Your counseling session is confirmed for Sept 22 at 2:00 PM.",
-    },
-    {
-      date: "September 9, 2024 - 10:05 AM",
-      text: "Appointment Reminder - Reminder: You have an appointment with the Guidance Office tomorrow at 10:00 AM.",
-    },
-    { date: "August 27, 2024 - 11:40 AM", text: "Mood Tracker Alert - Don't forget to update your mood tracker today." },
-  ],
-  seen: [
-    { date: "March 22, 2024 - 9:10 AM", text: "Wellness Seminar certificate is ready for pick-up." },
-    { date: "February 14, 2024 - 4:00 PM", text: "Your request for a Good Moral Certificate is being processed." },
-    { date: "January 12, 2024 - 2:10 PM", text: "Follow-up counseling recommended based on your last session." },
-    { date: "December 15, 2023 - 8:20 AM", text: "You've been added to the Stress Management Workshop participants list." },
-    { date: "November 29, 2023 - 1:00 PM", text: "Please update your profile information for counseling records." },
-  ],
-};
+const notifications = [
+  {
+    id: 1,
+    date: "Oct 03, 2025 • 3:30 PM",
+    title: "Counseling Reminder",
+    brief: "You have a follow-up session with Ms. Reyes.",
+    details:
+      "Follow-up counseling to check on academic stress and coping. Please bring reflection notes.",
+  },
+  {
+    id: 2,
+    date: "Oct 05, 2025 • 11:00 AM",
+    title: "Exit Interview Scheduled",
+    brief: "Exit interview with Mr. Cruz.",
+    details: "Bring required clearance forms and be prepared with exit feedback.",
+  },
+  {
+    id: 3,
+    date: "Oct 12, 2025 • 2:30 PM",
+    title: "Group Session: Stress Mgmt",
+    brief: "Peer support group on stress management.",
+    details: "Interactive group session. Comfortable clothing recommended.",
+  },
+];
 
-export default function Notification({ onGoHome }) {
+export default function Notification({ onNavigate }) {
+  const [selected, setSelected] = useState(null);
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <Text style={styles.welcomeText}>NOTIFICATION</Text>
+      <View style={styles.headerRow}>
+        <TouchableOpacity onPress={() => onNavigate("dashboard")}>
+          <Feather name="arrow-left" size={22} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Notifications</Text>
+        <View style={{ width: 22 }} />
+      </View>
 
-        {/* Profile Section */}
-        <View style={{ alignItems: "center", marginBottom: 20 }}>
-          <Image
-            source={{ uri: "https://randomuser.me/api/portraits/women/68.jpg" }}
-            style={{ width: 80, height: 80, borderRadius: 40, marginBottom: 8 }}
-          />
-          <Text style={{ fontSize: 18, fontWeight: "600" }}>Gina Wasahi Deleon</Text>
-        </View>
+      <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+        {notifications.map((n) => (
+          <TouchableOpacity key={n.id} style={styles.notifCard} onPress={() => setSelected(n)}>
+            <View style={styles.notifLeft}>
+              <Text style={styles.notifTitle}>{n.title}</Text>
+              <Text style={styles.notifBrief}>{n.brief}</Text>
+            </View>
 
-        {/* Notif List */}
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-          <View style={{ marginBottom: 20 }}>
-            <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>Unseen Notifications:</Text>
-            {notifications.unseen.map((item, index) => (
-              <View
-                key={index}
-                style={{
-                  backgroundColor: "#EAF8EC",
-                  borderRadius: 10,
-                  padding: 12,
-                  marginBottom: 10,
-                  borderLeftWidth: 4,
-                  borderLeftColor: "#376839ff",
-                }}
-              >
-                <Text style={{ fontSize: 12, color: "#555" }}>{item.date}</Text>
-                <Text style={{ fontSize: 14, marginTop: 4 }}>{item.text}</Text>
-              </View>
-            ))}
-          </View>
-
-          <View>
-            <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>Seen Notifications:</Text>
-            {notifications.seen.map((item, index) => (
-              <View
-                key={index}
-                style={{
-                  backgroundColor: "#F5F5F5",
-                  borderRadius: 10,
-                  padding: 12,
-                  marginBottom: 10,
-                  borderLeftWidth: 4,
-                  borderLeftColor: "#A5D6A7",
-                }}
-              >
-                <Text style={{ fontSize: 12, color: "#555" }}>{item.date}</Text>
-                <Text style={{ fontSize: 14, marginTop: 4 }}>{item.text}</Text>
-              </View>
-            ))}
-          </View>
-        </ScrollView>
-
-        {/* NAVBAR */}
-        <View style={styles.navBar}>
-          <TouchableOpacity style={styles.navItem} onPress={onGoHome}>
-            <Feather name="home" size={28} color="white" />
-            <Text style={styles.navLabel}>Homepage</Text>
+            <View style={styles.notifRight}>
+              <Text style={styles.notifDate}>{n.date}</Text>
+              <Text style={styles.viewMore}>View More</Text>
+            </View>
           </TouchableOpacity>
+        ))}
+      </ScrollView>
 
-          <TouchableOpacity style={styles.navItem}>
-            <Ionicons name="calendar-outline" size={28} color="white" />
-            <Text style={styles.navLabel}>Calendar</Text>
-          </TouchableOpacity>
+      {/* Slide-up */}
+      <Modal visible={!!selected} animationType="slide" transparent>
+        <TouchableWithoutFeedback onPress={() => setSelected(null)}>
+          <View style={styles.modalBackdrop} />
+        </TouchableWithoutFeedback>
 
-          <TouchableOpacity style={styles.navItem}>
-            <Ionicons name="person-circle-outline" size={28} color="white" />
-            <Text style={styles.navLabel}>Profile</Text>
-          </TouchableOpacity>
+        <View style={styles.modalSheet}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>{selected?.title}</Text>
+          <Text style={styles.modalDate}>{selected?.date}</Text>
+          <ScrollView style={{ marginTop: 10 }}>
+            <Text style={styles.modalDetails}>{selected?.details}</Text>
+          </ScrollView>
 
-          <TouchableOpacity style={[styles.navItem, styles.activeNavItem]}>
-            <Ionicons name="notifications-outline" size={28} color="white" />
-            <Text style={[styles.navLabel, styles.activeNavLabel]}>Notifications</Text>
+          <TouchableOpacity style={styles.modalBackBtn} onPress={() => setSelected(null)}>
+            <Text style={styles.modalBackText}>Back</Text>
           </TouchableOpacity>
         </View>
+      </Modal>
+
+      {/* Nav */}
+      <View style={styles.navBar}>
+        <TouchableOpacity style={styles.navItem} onPress={() => onNavigate("dashboard")}>
+          <Feather name="home" size={24} color="#fff" />
+         
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.navItem}>
+          <Ionicons name="calendar-outline" size={24} color="#fff" />
+      
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.navItem}>
+          <Ionicons name="happy-outline" size={24} color="#fff" />
+       
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.navItem} onPress={() => onNavigate("profile")}>
+          <Ionicons name="person-circle-outline" size={26} color="#fff" />
+         
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
