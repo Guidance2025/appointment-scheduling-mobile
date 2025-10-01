@@ -65,7 +65,7 @@ export default function Notification({ onNavigate }) {
         ))}
       </ScrollView>
 
-      {/* Slide-up modal */}
+      {/* Slide-up */}
       <Modal visible={!!selected} animationType="slide" transparent>
         <TouchableWithoutFeedback onPress={() => setSelected(null)}>
           <View style={styles.modalBackdrop} />
@@ -85,7 +85,7 @@ export default function Notification({ onNavigate }) {
         </View>
       </Modal>
 
-      {/* Navbar */}
+      {/* Nav */}
       <View style={styles.navBar}>
         <TouchableOpacity style={styles.navItem} onPress={() => onNavigate("dashboard")}>
           <Feather name="home" size={24} color="#fff" />

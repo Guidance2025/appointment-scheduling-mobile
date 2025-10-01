@@ -33,5 +33,5 @@ export default StyleSheet.create({
     width: "100%",
   },
   navItem: { alignItems: "center" },
-  navLabel: { color: "#fff", fontSize: 11, marginTop: 2 },
+  navLabel: { color: "#949494ff", fontSize: 11, marginTop: 2 },
 });

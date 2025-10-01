@@ -46,7 +46,7 @@ export default StyleSheet.create({
     padding: 18,
     maxHeight: "70%",
   },
-  modalHandle: { width: 60, height: 6, backgroundColor: "#eee", alignSelf: "center", borderRadius: 6, marginBottom: 10 },
+  modalHandle: { width: 60, height: 6, backgroundColor: "#ffffffff", alignSelf: "center", borderRadius: 6, marginBottom: 10 },
   modalTitle: { fontSize: 18, fontWeight: "700", color: "#333" },
   modalDate: { fontSize: 13, color: "#666", marginTop: 6 },
   modalDetails: { fontSize: 14, color: "#444", marginTop: 10 },
@@ -70,5 +70,5 @@ export default StyleSheet.create({
     width: "100%",
   },
   navItem: { alignItems: "center" },
-  navLabel: { color: "#fff", fontSize: 11, marginTop: 2 },
+  navLabel: { color: "#b9b9b9ff", fontSize: 11, marginTop: 2 },
 });

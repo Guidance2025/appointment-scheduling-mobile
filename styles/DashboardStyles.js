@@ -31,7 +31,7 @@ export default StyleSheet.create({
   cardLeft: { flex: 1, paddingRight: 8 },
   cardRight: { justifyContent: "center" },
 
-  cardDate: { fontSize: 13, color: "#666", marginBottom: 6 },
+  cardDate: { fontSize: 13, color: "#6b6b6bff", marginBottom: 6 },
   cardTopic: { fontSize: 16, fontWeight: "700", color: "#2d7a4f" },
   cardCounselor: { fontSize: 14, color: "#777", marginTop: 6 },
 

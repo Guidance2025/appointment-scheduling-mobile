@@ -22,7 +22,7 @@ const appointments = [
 export default function Dashboard({ onNavigate }) {
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Header */}
+      {/* Top */}
       <View style={styles.header}>
         <Image source={counselingLogo} style={styles.logo} />
         <TouchableOpacity onPress={() => onNavigate("notification")}>
@@ -77,7 +77,7 @@ export default function Dashboard({ onNavigate }) {
           <Ionicons name="person-circle-outline" size={26} color="#fff" />
          
         </TouchableOpacity>
-      </View>
+      </View> 
     </SafeAreaView>
   );
 }

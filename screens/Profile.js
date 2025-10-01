@@ -40,7 +40,7 @@ export default function Profile({ onNavigate }) {
         </View>
       </ScrollView>
 
-      {/* Navbar */}
+      {/* Nav*/}
       <View style={styles.navBar}>
         <TouchableOpacity style={styles.navItem} onPress={() => onNavigate("dashboard")}>
           <Feather name="home" size={24} color="#fff" />
