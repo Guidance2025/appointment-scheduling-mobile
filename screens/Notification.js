@@ -85,7 +85,7 @@ export default function Notification({ onNavigate }) {
         </View>
       </Modal>
 
-      {/* Navbar (same as others) */}
+      {/* Navbar */}
       <View style={styles.navBar}>
         <TouchableOpacity style={styles.navItem} onPress={() => onNavigate("dashboard")}>
           <Feather name="home" size={24} color="#fff" />

@@ -34,7 +34,7 @@ export default StyleSheet.create({
   notifDate: { fontSize: 12, color: "#777" },
   viewMore: { marginTop: 6, color: "#48BB78", fontWeight: "700" },
 
-  // modal slide-up sheet
+  
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
   modalSheet: {
     position: "absolute",
