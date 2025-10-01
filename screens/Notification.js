@@ -89,22 +89,22 @@ export default function Notification({ onNavigate }) {
       <View style={styles.navBar}>
         <TouchableOpacity style={styles.navItem} onPress={() => onNavigate("dashboard")}>
           <Feather name="home" size={24} color="#fff" />
-          <Text style={styles.navLabel}>Home</Text>
+         
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.navItem}>
           <Ionicons name="calendar-outline" size={24} color="#fff" />
-          <Text style={styles.navLabel}>Calendar</Text>
+      
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.navItem}>
           <Ionicons name="happy-outline" size={24} color="#fff" />
-          <Text style={styles.navLabel}>Mood</Text>
+       
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.navItem} onPress={() => onNavigate("profile")}>
           <Ionicons name="person-circle-outline" size={26} color="#fff" />
-          <Text style={styles.navLabel}>Profile</Text>
+         
         </TouchableOpacity>
       </View>
     </SafeAreaView>
