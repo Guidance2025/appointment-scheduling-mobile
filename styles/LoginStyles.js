@@ -62,7 +62,7 @@ const LoginStyles = StyleSheet.create({
   },
 
   textFieldFocused: {
-    borderColor: '#3b82f6',
+    borderColor: '#4A9782',
     backgroundColor: '#ffffff',
     shadowColor: '#3b82f6',
     shadowOffset: {
@@ -229,6 +229,19 @@ const LoginStyles = StyleSheet.create({
     fontSize: 14,
     paddingHorizontal: 16,
   },
+   errorMessage: {
+    backgroundColor: "#fee",
+    borderWidth: 1,
+    borderColor: "#fcc",
+    padding: 10,
+    borderRadius: 4,
+    marginBottom: 15
+  },
+  errorText: {
+    color: "#c33",
+    fontSize: 14
+  }
 });
+
 
 export default LoginStyles;
