@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from 'react';
 import LoginStyles from "../styles/LoginStyles";
 import GabayLogo from "../assets/Gabay.png";
 import {View,TextInput,Text,Pressable,Alert,Image,Platform} from "react-native";
