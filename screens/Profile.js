@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   SafeAreaView,
   View,
@@ -7,12 +7,18 @@ import {
   TouchableOpacity,
   Image,
 } from "react-native";
-import { Feather, Ionicons } from "@expo/vector-icons";
 import styles from "../styles/ProfileStyles";
+import BottomNavBar from "./layout/BottomNavBar";
 
-const profileImage = require("../assets/counseling_image.jpg"); // reuse asset
-
+const profileImage = require("../assets/counseling_image.jpg"); 
 export default function Profile({ onNavigate }) {
+  const [activeScreen,setActiveScreen] = useState("profile");
+
+  const handleNavigation = (screen) => {
+    setActiveScreen(screen);
+    onNavigate(screen);
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
@@ -40,28 +46,11 @@ export default function Profile({ onNavigate }) {
         </View>
       </ScrollView>
 
-      {/* Nav*/}
-      <View style={styles.navBar}>
-        <TouchableOpacity style={styles.navItem} onPress={() => onNavigate("dashboard")}>
-          <Feather name="home" size={24} color="#fff" />
-         
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="calendar-outline" size={24} color="#fff" />
-        
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="happy-outline" size={24} color="#fff" />
-        
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.navItem} onPress={() => onNavigate("notification")}>
-          <Ionicons name="notifications-outline" size={26} color="#fff" />
-         
-        </TouchableOpacity>
-      </View>
+        <BottomNavBar
+        activeScreen={activeScreen}
+        onNavigate={handleNavigation}
+        />
+      
     </SafeAreaView>
   );
 }

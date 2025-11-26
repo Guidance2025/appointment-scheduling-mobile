@@ -1,8 +1,8 @@
 {
   "project_info": {
     "project_number": "106572713774",
-     "project_id": "appointment-notication",
-    "storage_bucket": "appointment-notication.firebasestorage.app"
+    "project_id": "appointment-notification-cc54d",
+    "storage_bucket": "appointment-notification-cc54d.firebasestorage.app"
   },
   "client": [
     {
@@ -10,25 +10,6 @@
         "mobilesdk_app_id": "1:106572713774:android:d5c37c9f8da487e5bf74bf",
         "android_client_info": {
           "package_name": "com.neonael.appointmentschedulingmobile"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyBQf6iL2HnonBiO6TpEMOPY6JLxOBVp8aw"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:106572713774:android:07793768ed951d67bf74bf",
-        "android_client_info": {
-          "package_name": "com.reactnative34"
         }
       },
       "oauth_client": [],

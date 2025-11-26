@@ -1,4 +1,3 @@
-// firebase.js (Mobile - React Native Expo with FCM)
 import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
@@ -13,7 +12,6 @@ projectId: "appointment-notification-cc54d",
 
 const app = initializeApp(firebaseConfig);
 
-// For React Native, we need to handle messaging differently
 let messaging;
 try {
   messaging = getMessaging(app);
