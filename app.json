@@ -4,26 +4,32 @@
     "slug": "appointment-scheduling-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/Gabay.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "scheme": "appointmentscheduling",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/Gabay.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "ios": {
-      "supportsTablet": true
-    },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/Gabay.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.neonael.appointmentschedulingmobile",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/Gabay.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "3d2bf45e-6b51-42c3-9d5d-8171bbd5701d"
+      }
+    },
+    "owner": "neonael"
   }
 }

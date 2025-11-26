@@ -1,8 +1,12 @@
-import { StyleSheet, Dimensions } from "react-native";
+import { StyleSheet, Dimensions, Platform } from "react-native";
 const { width } = Dimensions.get("window");
 
 export default StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#fff" },
+    safeArea: {
+      flex: 1,
+      backgroundColor: "#ffffffff",
+      paddingTop: Platform.OS === 'android' ? 30 : 0,
+    },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -10,7 +14,7 @@ export default StyleSheet.create({
     paddingTop: 18,
     paddingBottom: 8,
   },
-  headerTitle: { flex: 1, textAlign: "center", fontSize: 18, fontWeight: "700", color: "#333" },
+  headerTitle: { flex: 1, textAlign: "center", fontSize: 23, fontWeight: "700", color: "#333" , marginBottom: 5 },
 
   list: { paddingHorizontal: 18, paddingBottom: 140 },
 
@@ -29,27 +33,26 @@ export default StyleSheet.create({
   notifLeft: { flex: 1, paddingRight: 8 },
   notifRight: { alignItems: "flex-end", justifyContent: "space-between" },
 
-  notifTitle: { fontSize: 15, fontWeight: "700", color: "#2d7a4f" },
+  notifTitle: { fontSize: 15, fontWeight: "700", color: "#3a3939ff" },
   notifBrief: { fontSize: 13, color: "#555", marginTop: 6 },
-  notifDate: { fontSize: 12, color: "#777" },
-  viewMore: { marginTop: 6, color: "#48BB78", fontWeight: "700" },
+  notifDate: { fontSize: 13, color: "#777",marginTop: 10 },
 
   
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
   modalSheet: {
     position: "absolute",
-    bottom: 0,
+    bottom: 2,
     width: width,
     backgroundColor: "#fff",
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
     padding: 18,
-    maxHeight: "70%",
+    maxHeight: "100%",
   },
   modalHandle: { width: 60, height: 6, backgroundColor: "#ffffffff", alignSelf: "center", borderRadius: 6, marginBottom: 10 },
-  modalTitle: { fontSize: 18, fontWeight: "700", color: "#333" },
+  modalTitle: { fontSize: 23, fontWeight: "700", color: "#333" },
   modalDate: { fontSize: 13, color: "#666", marginTop: 6 },
-  modalDetails: { fontSize: 14, color: "#444", marginTop: 10 },
+  modalDetails: { fontSize: 14, color: "#444", marginTop: 10 , marginBottom: 20, lineHeight: 23 , fontWeight: 500 },
 
   modalBackBtn: {
     backgroundColor: "#48BB78",

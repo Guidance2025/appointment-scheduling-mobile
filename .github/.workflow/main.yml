@@ -1,4 +1,4 @@
-name: Simple CI/CD
+name: Mobile CI/CD
 
 on:
   push:
@@ -23,6 +23,6 @@ jobs:
       
     - name: Check for errors
       run: |
-        echo "✅ Code downloaded successfully"
-        echo "✅ Dependencies installed"
-        echo "✅  Checks completed"
+        echo " Code downloaded successfully"
+        echo " Dependencies installed"
+        echo "  Checks completed"

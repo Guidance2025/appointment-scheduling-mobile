@@ -1,82 +1,102 @@
-/* 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
+import { View, TextInput, Text, Pressable, Image } from "react-native";
 import LoginStyles from "../styles/LoginStyles";
-import GabayLogo from "../assets/Gabay.png"; 
-import { View, TextInput, Text, Pressable, Alert , Image } from 'react-native';
+import GabayLogo from "../assets/Gabay.png";
 
-const LoginScreen = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+import { login } from "../service/auth";
+import { getFCMToken, registerFcmToken } from "../service/fcm";
+import { setupFCMHandlers } from "../service/notification";
+
+const LoginScreen = ({ onNavigate }) => {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [focusedField, setFocusedField] = useState(null);
+  const [fcmToken, setFcmToken] = useState(null);
+  const [tokenStatus, setTokenStatus] = useState("Pending...");
+  const [tokenError, setTokenError] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const init = async () => {
+      const unsubscribe = setupFCMHandlers(setFcmToken, setTokenStatus);
+      setTimeout(() => getFCMToken(setFcmToken, setTokenStatus, setTokenError), 1000);
+      return () => unsubscribe && unsubscribe();
+    };
+    init();
+  }, []);
 
   const handleLogin = async () => {
-   
+    if (!username.trim() || !password.trim()) {
+      setError("Username and password are required");
+      return;
+    }
+    setIsLoading(true);
+
+    try {
+      const result = await login(username, password);
+      const userId = result?.userId;
+      let tokenToRegister = fcmToken || (await getFCMToken(setFcmToken, setTokenStatus, setTokenError));
+
+      if (tokenToRegister) {
+        await registerFcmToken(userId, tokenToRegister);
+      }
+
+      onNavigate("dashboard");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <View style={LoginStyles.container}>
-      <Image
-      source={GabayLogo}   
-      style={{ width: 120, height: 120 }}
-    />
+      <Image source={GabayLogo} style={{ width: 120, height: 120 }} />
       <Text style={LoginStyles.title}>GABAY</Text>
-
+      {__DEV__ && (
+        <Text style={{ fontSize: 10, color: "#666" }}>
+          FCM: {tokenStatus} {tokenError && `(${tokenError})`}
+        </Text>
+      )}
+      {error && (
+        <View style={LoginStyles.errorMessage}>
+          <Text style={LoginStyles.errorText}>{error}</Text>
+        </View>
+      )}
       <View style={LoginStyles.formContainer}>
         <Text style={LoginStyles.label}>Username</Text>
         <TextInput
-          style={[
-            LoginStyles.textField,
-            focusedField === 'username' && LoginStyles.textFieldFocused
-          ]}
+          style={LoginStyles.textField}
           value={username}
           onChangeText={setUsername}
-          onFocus={() => setFocusedField('username')}
-          onBlur={() => setFocusedField(null)}
           placeholder="Enter your username"
-          placeholderTextColor="#9ca3af"
-          autoCapitalize="none"
-          autoCorrect={false}
         />
-
         <Text style={LoginStyles.label}>Password</Text>
         <TextInput
-          style={[
-            LoginStyles.textField,
-            focusedField === 'password' && LoginStyles.textFieldFocused
-          ]}
+          style={LoginStyles.textField}
           value={password}
           onChangeText={setPassword}
-          onFocus={() => setFocusedField('password')}
-          onBlur={() => setFocusedField(null)}
+          secureTextEntry
           placeholder="Enter your password"
-          placeholderTextColor="#9ca3af"
-          secureTextEntry={true}
         />
-
-        <Pressable 
-          style={({pressed}) => [
+        <Pressable
+          style={({ pressed }) => [
             LoginStyles.button,
             pressed && LoginStyles.buttonPressed,
-            isLoading && LoginStyles.buttonLoading
+            isLoading && LoginStyles.buttonLoading,
           ]}
           onPress={handleLogin}
           disabled={isLoading}
         >
           <Text style={LoginStyles.loginLabel}>
-            {isLoading ? 'Logging in...' : 'Login'}
+            {isLoading ? "Logging in..." : "Login"}
           </Text>
         </Pressable>
 
-        <View style={LoginStyles.signupContainer}>
-          <Text style={LoginStyles.signupText}>Don't have an account?</Text>
-          <Pressable>
-            <Text style={LoginStyles.signupLink}>Sign Up</Text>
-          </Pressable>
-        </View>
       </View>
     </View>
   );
 };
 
-export default LoginScreen; */
+export default LoginScreen;
