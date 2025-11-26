@@ -138,20 +138,18 @@ export default function Dashboard({ onNavigate }) {
     }
   };
 
-  // Pull to refresh handler
   const onRefresh = async () => {
     setRefreshing(true);
     console.log("🔄 Refreshing data...");
     
     try {
-      // Fetch both unread count and appointments in parallel
       await Promise.all([
         fetchUnreadCount(),
         fetchAppointments()
       ]);
-      console.log("✅ Data refreshed successfully");
+      console.log(" Data refreshed successfully");
     } catch (error) {
-      console.error("❌ Error refreshing data:", error);
+      console.error(" Error refreshing data:", error);
     } finally {
       setRefreshing(false);
     }
@@ -287,7 +285,6 @@ export default function Dashboard({ onNavigate }) {
           )}
         </View>
 
-        {/* Book Button */}
         <View style={styles.bookButtonContainer}>
           <TouchableOpacity 
             style={styles.bookButton}
