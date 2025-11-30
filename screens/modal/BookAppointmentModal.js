@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import {Modal,View,Text,TextInput, TouchableOpacity,ScrollView,ActivityIndicator,Alert,Platform,} from "react-native";
+import {Modal,View,Text,TextInput, TouchableOpacity,ScrollView,ActivityIndicator,Platform,} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "../../constants/api";
 import styles from "./../../styles/BookAppointmentModalStyles"
+import { SuccessMessage } from "./message/SuccessMessage";
 
 export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
   const [appointmentType, setAppointmentType] = useState("");
@@ -21,6 +22,7 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
   const [showAppointmentTypes, setShowAppointmentTypes] = useState(false);
   const [showGuidanceStaff, setShowGuidanceStaff] = useState(false);
   const [loadingStaff, setLoadingStaff] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const appointmentTypes = [
     "Counseling",
@@ -151,30 +153,36 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
           setError("You already have a pending or scheduled appointment");
           return;
         }
+
+        if (errorText.includes("YOU HAVE REACHED THE MAXIMUM LIMIT") || 
+            errorText.includes("PENDING APPOINTMENT")) {
+          setError("You have reached the maximum limit of pending appointments. Please wait for your existing appointment to be processed.");
+          return;
+        }
+
+        if (errorText.toLowerCase().includes("guidance staff has an appointment for this time")) {
+          setError("This counselor already has an appointment at this time. Please choose another schedule.");
+          return;
+        }
         
         throw new Error(errorText || "Failed to create appointment");
       }
 
-      Alert.alert(
-        "Success",
-        "Appointment request sent successfully! Please wait for counselor confirmation.",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              resetForm();
-              onClose();
-              if (onSuccess) onSuccess();
-            },
-          },
-        ]
-      );
+      setShowSuccess(true);
+
     } catch (err) {
       console.error("Error creating appointment:", err);
       setError(err.message || "Failed to create appointment");
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleSuccessClose = () => {
+    setShowSuccess(false);
+    resetForm();
+    onClose();
+    if (onSuccess) onSuccess();
   };
 
   const resetForm = () => {
@@ -265,203 +273,213 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
   const isFormValid = appointmentType && guidanceStaffId && !error;
 
   const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), now.getDate()); 
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0); 
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); 
+  const endOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+  
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Book Appointment</Text>
-            <TouchableOpacity onPress={() => { resetForm(); onClose(); }}>
-              <Ionicons name="close" size={28} color="#333" />
-            </TouchableOpacity>
-          </View>
+    <>
+      <Modal
+        visible={visible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={onClose}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Book Appointment</Text>
+              <TouchableOpacity onPress={() => { resetForm(); onClose(); }}>
+                <Ionicons name="close" size={28} color="#333" />
+              </TouchableOpacity>
+            </View>
 
-          <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-            {error ? (
-              <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>{error}</Text>
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              {error ? (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorText}>{error}</Text>
+                </View>
+              ) : null}
+
+              <View style={styles.fieldContainer}>
+                <Text style={styles.label}>
+                  Appointment Type <Text style={styles.required}>*</Text>
+                </Text>
+                <TouchableOpacity
+                  style={styles.selectInput}
+                  onPress={() => setShowAppointmentTypes(!showAppointmentTypes)}
+                  disabled={isProcessing}
+                >
+                  <Text style={appointmentType ? styles.selectText : styles.selectPlaceholder}>
+                    {appointmentType || "Select Appointment Type"}
+                  </Text>
+                  <Ionicons name="chevron-down" size={20} color="#666" />
+                </TouchableOpacity>
+                
+                {showAppointmentTypes && (
+                  <View style={styles.dropdown}>
+                    {appointmentTypes.map((type) => (
+                      <TouchableOpacity
+                        key={type}
+                        style={styles.dropdownItem}
+                        onPress={() => {
+                          setAppointmentType(type);
+                          setShowAppointmentTypes(false);
+                          setError(""); 
+                        }}
+                      >
+                        <Text style={styles.dropdownItemText}>{type}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
               </View>
-            ) : null}
 
-            <View style={styles.fieldContainer}>
-              <Text style={styles.label}>
-                Appointment Type <Text style={styles.required}>*</Text>
-              </Text>
-              <TouchableOpacity
-                style={styles.selectInput}
-                onPress={() => setShowAppointmentTypes(!showAppointmentTypes)}
-                disabled={isProcessing}
-              >
-                <Text style={appointmentType ? styles.selectText : styles.selectPlaceholder}>
-                  {appointmentType || "Select Appointment Type"}
+              <View style={styles.fieldContainer}>
+                <Text style={styles.label}>
+                  Counselor <Text style={styles.required}>*</Text>
                 </Text>
-                <Ionicons name="chevron-down" size={20} color="#666" />
-              </TouchableOpacity>
-              
-              {showAppointmentTypes && (
-                <View style={styles.dropdown}>
-                  {appointmentTypes.map((type) => (
-                    <TouchableOpacity
-                      key={type}
-                      style={styles.dropdownItem}
-                      onPress={() => {
-                        setAppointmentType(type);
-                        setShowAppointmentTypes(false);
-                        setError(""); 
-                      }}
-                    >
-                      <Text style={styles.dropdownItemText}>{type}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </View>
+                <TouchableOpacity
+                  style={styles.selectInput}
+                  onPress={() => setShowGuidanceStaff(!showGuidanceStaff)}
+                  disabled={isProcessing || loadingStaff}
+                >
+                  <Text style={guidanceStaffId ? styles.selectText : styles.selectPlaceholder}>
+                    {loadingStaff ? "Loading..." : getSelectedStaffName()}
+                  </Text>
+                  <Ionicons name="chevron-down" size={20} color="#666" />
+                </TouchableOpacity>
+                
+                {showGuidanceStaff && (
+                  <View style={styles.dropdown}>
+                    {guidanceStaffList.map((staff) => (
+                      <TouchableOpacity
+                        key={staff.id}
+                        style={styles.dropdownItem}
+                        onPress={() => {
+                          setGuidanceStaffId(staff.id);
+                          setShowGuidanceStaff(false);
+                          setError(""); 
+                        }}
+                      >
+                        <Text style={styles.dropdownItemText}>
+                          {staff.person?.firstName} {staff.person?.lastName}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
 
-            <View style={styles.fieldContainer}>
-              <Text style={styles.label}>
-                Counselor <Text style={styles.required}>*</Text>
-              </Text>
-              <TouchableOpacity
-                style={styles.selectInput}
-                onPress={() => setShowGuidanceStaff(!showGuidanceStaff)}
-                disabled={isProcessing || loadingStaff}
-              >
-                <Text style={guidanceStaffId ? styles.selectText : styles.selectPlaceholder}>
-                  {loadingStaff ? "Loading..." : getSelectedStaffName()}
+              <View style={styles.fieldContainer}>
+                <Text style={styles.label}>
+                  Appointment Date <Text style={styles.required}>*</Text>
                 </Text>
-                <Ionicons name="chevron-down" size={20} color="#666" />
-              </TouchableOpacity>
-              
-              {showGuidanceStaff && (
-                <View style={styles.dropdown}>
-                  {guidanceStaffList.map((staff) => (
-                    <TouchableOpacity
-                      key={staff.id}
-                      style={styles.dropdownItem}
-                      onPress={() => {
-                        setGuidanceStaffId(staff.id);
-                        setShowGuidanceStaff(false);
-                        setError(""); 
-                      }}
-                    >
-                      <Text style={styles.dropdownItemText}>
-                        {staff.person?.firstName} {staff.person?.lastName}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </View>
+                <TouchableOpacity
+                  style={styles.dateTimeInput}
+                  onPress={() => setShowStartDatePicker(true)}
+                  disabled={isProcessing}
+                >
+                  <Ionicons name="calendar-outline" size={20} color="#48BB78" />
+                  <Text style={styles.dateTimeText}>{formatDate(scheduledDate)}</Text>
+                </TouchableOpacity>
+              </View>
 
-            <View style={styles.fieldContainer}>
-              <Text style={styles.label}>
-                Appointment Date <Text style={styles.required}>*</Text>
-              </Text>
+              <View style={styles.fieldContainer}>
+                <Text style={styles.label}>
+                  Start Time <Text style={styles.required}>*</Text>
+                </Text>
+                <TouchableOpacity
+                  style={styles.dateTimeInput}
+                  onPress={() => setShowStartTimePicker(true)}
+                  disabled={isProcessing}
+                >
+                  <Ionicons name="time-outline" size={20} color="#48BB78" />
+                  <Text style={styles.dateTimeText}>{formatTime(scheduledDate)}</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.fieldContainer}>
+                <Text style={styles.label}>
+                  End Time <Text style={styles.required}>*</Text>
+                </Text>
+                <TouchableOpacity
+                  style={styles.dateTimeInput}
+                  onPress={() => setShowEndTimePicker(true)}
+                  disabled={isProcessing}
+                >
+                  <Ionicons name="time-outline" size={20} color="#48BB78" />
+                  <Text style={styles.dateTimeText}>{formatTime(endDate)}</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.fieldContainer}>
+                <Text style={styles.label}>Notes (Optional)</Text>
+                <TextInput
+                  style={styles.textArea}
+                  value={notes}
+                  onChangeText={(text) => { setNotes(text); setError(""); }}
+                  placeholder="Additional notes or concerns..."
+                  multiline
+                  numberOfLines={4}
+                  maxLength={500}
+                  editable={!isProcessing}
+                />
+              </View>
+
               <TouchableOpacity
-                style={styles.dateTimeInput}
-                onPress={() => setShowStartDatePicker(true)}
-                disabled={isProcessing}
+                style={[
+                  styles.submitButton,
+                  (!isFormValid || isProcessing) && styles.submitButtonDisabled,
+                ]}
+                onPress={handleSubmit}
+                disabled={!isFormValid || isProcessing}
               >
-                <Ionicons name="calendar-outline" size={20} color="#48BB78" />
-                <Text style={styles.dateTimeText}>{formatDate(scheduledDate)}</Text>
+                {isProcessing ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.submitButtonText}>Set Appointment</Text>
+                )}
               </TouchableOpacity>
-            </View>
+            </ScrollView>
 
-            <View style={styles.fieldContainer}>
-              <Text style={styles.label}>
-                Start Time <Text style={styles.required}>*</Text>
-              </Text>
-              <TouchableOpacity
-                style={styles.dateTimeInput}
-                onPress={() => setShowStartTimePicker(true)}
-                disabled={isProcessing}
-              >
-                <Ionicons name="time-outline" size={20} color="#48BB78" />
-                <Text style={styles.dateTimeText}>{formatTime(scheduledDate)}</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.fieldContainer}>
-              <Text style={styles.label}>
-                End Time <Text style={styles.required}>*</Text>
-              </Text>
-              <TouchableOpacity
-                style={styles.dateTimeInput}
-                onPress={() => setShowEndTimePicker(true)}
-                disabled={isProcessing}
-              >
-                <Ionicons name="time-outline" size={20} color="#48BB78" />
-                <Text style={styles.dateTimeText}>{formatTime(endDate)}</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.fieldContainer}>
-              <Text style={styles.label}>Notes (Optional)</Text>
-              <TextInput
-                style={styles.textArea}
-                value={notes}
-                onChangeText={(text) => { setNotes(text); setError(""); }}
-                placeholder="Additional notes or concerns..."
-                multiline
-                numberOfLines={4}
-                maxLength={500}
-                editable={!isProcessing}
+            {showStartDatePicker && (
+              <DateTimePicker
+                value={scheduledDate}
+                mode="date"
+                display="default"
+                onChange={onStartDateChange}
+                minimumDate={today} 
+                maximumDate={endOfNextMonth}   
               />
-            </View>
+            )}
 
-            <TouchableOpacity
-              style={[
-                styles.submitButton,
-                (!isFormValid || isProcessing) && styles.submitButtonDisabled,
-              ]}
-              onPress={handleSubmit}
-              disabled={!isFormValid || isProcessing}
-            >
-              {isProcessing ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.submitButtonText}>Set Appointment</Text>
-              )}
-            </TouchableOpacity>
-          </ScrollView>
+            {showStartTimePicker && (
+              <DateTimePicker
+                value={scheduledDate}
+                mode="time"
+                display="default"
+                onChange={onStartTimeChange}
+              />
+            )}
 
-          {showStartDatePicker && (
-            <DateTimePicker
-              value={scheduledDate}
-              mode="date"
-              display="default"
-              onChange={onStartDateChange}
-              minimumDate={startOfMonth} 
-              maximumDate={endOfMonth}   
-            />
-          )}
-
-          {showStartTimePicker && (
-            <DateTimePicker
-              value={scheduledDate}
-              mode="time"
-              display="default"
-              onChange={onStartTimeChange}
-            />
-          )}
-
-          {showEndTimePicker && (
-            <DateTimePicker
-              value={endDate}
-              mode="time"
-              display="default"
-              onChange={onEndTimeChange}
-            />
-          )}
+            {showEndTimePicker && (
+              <DateTimePicker
+                value={endDate}
+                mode="time"
+                display="default"
+                onChange={onEndTimeChange}
+              />
+            )}
+          </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
+
+      <SuccessMessage
+        visible={showSuccess}
+        title="Success"
+        message="Appointment request sent successfully! Please wait for counselor confirmation."
+        onClose={handleSuccessClose}
+      />
+    </>
   );
 }

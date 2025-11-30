@@ -31,20 +31,48 @@ const LoginScreen = ({ onNavigate }) => {
       setError("Username and password are required");
       return;
     }
+    
+    setError("");
     setIsLoading(true);
 
     try {
       const result = await login(username, password);
       const userId = result?.userId;
       let tokenToRegister = fcmToken || (await getFCMToken(setFcmToken, setTokenStatus, setTokenError));
-
+    
       if (tokenToRegister) {
         await registerFcmToken(userId, tokenToRegister);
       }
 
       onNavigate("dashboard");
     } catch (err) {
-      setError(err.message);
+      console.error("Login error:", err);
+      
+      
+      let errorMessage = "An error occurred. Please try again.";
+      
+      if (err.message) {
+        
+        if (err.message.includes("USERNAME/PASSWORD IS INCORRECT") || 
+            err.message.includes("BAD_REQUEST") ||
+            err.message.includes("400")) {
+          errorMessage = "Invalid username or password. Please try again.";
+        }
+        else if (err.message.includes("ACCOUNT_LOCKED") || 
+                 err.message.includes("YOUR ACCOUNT HAS BEEN LOCKED")) {
+          errorMessage = "Your account has been locked. Please contact support.";
+        }
+        else if (err.message.includes("Network") || 
+                 err.message.includes("Failed to fetch")) {
+          errorMessage = "Network error. Please check your connection.";
+        }
+        
+        else if (err.message && !err.message.includes("{")) {
+          errorMessage = err.message;
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -54,11 +82,6 @@ const LoginScreen = ({ onNavigate }) => {
     <View style={LoginStyles.container}>
       <Image source={GabayLogo} style={{ width: 120, height: 120 }} />
       <Text style={LoginStyles.title}>GABAY</Text>
-      {__DEV__ && (
-        <Text style={{ fontSize: 10, color: "#666" }}>
-          FCM: {tokenStatus} {tokenError && `(${tokenError})`}
-        </Text>
-      )}
       {error && (
         <View style={LoginStyles.errorMessage}>
           <Text style={LoginStyles.errorText}>{error}</Text>
@@ -69,14 +92,22 @@ const LoginScreen = ({ onNavigate }) => {
         <TextInput
           style={LoginStyles.textField}
           value={username}
-          onChangeText={setUsername}
+          onChangeText={(text) => {
+            setUsername(text);
+            setError(""); 
+          }}
           placeholder="Enter your username"
+          autoCapitalize="none"
+          autoCorrect={false}
         />
         <Text style={LoginStyles.label}>Password</Text>
         <TextInput
           style={LoginStyles.textField}
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(text) => {
+            setPassword(text);
+            setError(""); 
+          }}
           secureTextEntry
           placeholder="Enter your password"
         />
@@ -93,7 +124,6 @@ const LoginScreen = ({ onNavigate }) => {
             {isLoading ? "Logging in..." : "Login"}
           </Text>
         </Pressable>
-
       </View>
     </View>
   );

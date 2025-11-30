@@ -36,6 +36,8 @@ export async function login(username, password) {
     console.log("Login successful. User ID:", userId);
     return { success: true, userId, studentId };  
 
+    
+
   } catch (error) {
     console.error("Login error:", error);
     throw error;
