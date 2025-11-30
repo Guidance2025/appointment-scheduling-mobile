@@ -6,13 +6,11 @@ import Dashboard from "./screens/Dashboard";
 import Notification from "./screens/Notification";
 import Profile from "./screens/Profile";
 import Login from "./screens/LoginScreen";
+import Appointment from "./screens/Appointment";
 
-// 🔥 CRITICAL: Background message handler MUST be at the top level
-// This runs when the app receives notifications while closed or in background
 messaging().setBackgroundMessageHandler(async remoteMessage => {
   console.log('📩 Background notification received:', remoteMessage);
   
-  // Extract notification details
   const { notification, data } = remoteMessage;
   console.log('Title:', notification?.title);
   console.log('Body:', notification?.body);
@@ -26,7 +24,7 @@ export default function App() {
   const navigate = (target) => setScreen(target);
 
   useEffect(() => {
-    console.log(' Setting up notification listeners...');
+    console.log(' Setting up notification listeners.');
 
     const unsubscribeNotificationOpen = messaging().onNotificationOpenedApp(remoteMessage => {
       console.log(' Notification opened app from background:', remoteMessage);
@@ -72,6 +70,10 @@ export default function App() {
 
       {screen === "profile" && (
         <Profile onNavigate={(t) => navigate(t)} />
+      )}
+
+      {screen === "appointments" && (
+        <Appointment onNavigate={(t) => navigate(t)} />
       )}
     </View>
   );

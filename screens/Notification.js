@@ -16,8 +16,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "../constants/api";
 import BottomNavBar from "./layout/BottomNavBar";
 
-
-
 export default function Notification({ onNavigate }) {
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(false);
