@@ -29,6 +29,39 @@ export default function Dashboard({ onNavigate }) {
   const [showBookModal, setShowBookModal] = useState(false);
   const [activeScreen, setActiveScreen] = useState("dashboard");
 
+
+const fetchStudentInfo = async () => {
+  try {
+    // Add 'await' here - these should be awaited!
+    const studentId = await AsyncStorage.getItem("studentId");
+    const jwtToken = await AsyncStorage.getItem("jwtToken");
+    
+    if(!studentId || !jwtToken) {
+      console.log("Student id or Token is missing");
+      return; 
+    }
+    
+    const response = await fetch(
+      `${API_BASE_URL}/student/retrieve/profile/${studentId}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${jwtToken}`,
+        },
+      }
+    );
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    setStudentName(`${data?.person?.firstName} ${data?.person?.lastName}`);
+
+  } catch(error) { 
+    console.log("Failed Loading Dashboard Info:", error);
+  }
+};
   const handleUnreadCount = async (userId) => {
     try {
       const token = await AsyncStorage.getItem("jwtToken");
@@ -100,7 +133,7 @@ export default function Dashboard({ onNavigate }) {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await Promise.all([fetchUnreadCount(), fetchAppointments()]);
+      await Promise.all([fetchUnreadCount(), fetchAppointments(), fetchStudentInfo()]);
     } catch (error) {
       console.error("Error refreshing data:", error);
     } finally {
@@ -116,6 +149,7 @@ export default function Dashboard({ onNavigate }) {
   useEffect(() => {
     fetchUnreadCount();
     fetchAppointments();
+    fetchStudentInfo();
   }, []);
 
   return (
