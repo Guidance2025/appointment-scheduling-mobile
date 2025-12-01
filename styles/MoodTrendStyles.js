@@ -32,7 +32,37 @@ export default StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 120, 
+    paddingBottom: 120,
+  },
+  moodGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-around",
+    marginBottom: 20,
+  },
+  moodCircle: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  moodSelected: {
+    borderWidth: 3,
+    borderColor: "#1B5E20",
+  },
+  moodCircleText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#fff",
+    textAlign: "center",
+    paddingHorizontal: 6,
   },
   inputContainer: {
     marginBottom: 20,

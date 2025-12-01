@@ -7,6 +7,9 @@ import Notification from "./screens/Notification";
 import Profile from "./screens/Profile";
 import Login from "./screens/LoginScreen";
 import Appointment from "./screens/Appointment";
+import ExitInterview from "./screens/ExitInterview";
+import MoodTrend from "./screens/MoodTrend";
+import ContentHub from "./screens/ContentHub";
 
 messaging().setBackgroundMessageHandler(async remoteMessage => {
   console.log('📩 Background notification received:', remoteMessage);
@@ -55,7 +58,7 @@ export default function App() {
     };
   }, []);
 
-  return (
+    return (
     <View style={styles.container}>
       <StatusBar style="dark" />
       {screen === "login" && <Login onNavigate={(t) => navigate(t)} />}
@@ -74,6 +77,17 @@ export default function App() {
 
       {screen === "appointments" && (
         <Appointment onNavigate={(t) => navigate(t)} />
+      )}
+
+      {screen === "exitInterview" && (
+        <ExitInterview onNavigate={(t) => navigate(t)} />
+      )}
+
+      {screen === "moodTrend" && (
+        <MoodTrend onNavigate={(t) => navigate(t)} />
+      )}
+      {screen === "contentHub" && (
+        <ContentHub onNavigate={(t) => navigate(t)} />
       )}
     </View>
   );
