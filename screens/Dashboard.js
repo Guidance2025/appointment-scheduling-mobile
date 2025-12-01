@@ -32,7 +32,6 @@ export default function Dashboard({ onNavigate }) {
 
 const fetchStudentInfo = async () => {
   try {
-    // Add 'await' here - these should be awaited!
     const studentId = await AsyncStorage.getItem("studentId");
     const jwtToken = await AsyncStorage.getItem("jwtToken");
     
