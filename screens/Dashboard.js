@@ -32,6 +32,7 @@ export default function Dashboard({ onNavigate }) {
 
 const fetchStudentInfo = async () => {
   try {
+    
     const studentId = await AsyncStorage.getItem("studentId");
     const jwtToken = await AsyncStorage.getItem("jwtToken");
     
