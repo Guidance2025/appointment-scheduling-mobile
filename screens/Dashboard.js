@@ -9,14 +9,17 @@ import {
   ActivityIndicator,
   StatusBar,
   RefreshControl,
+  AppState,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons , MaterialIcons } from "@expo/vector-icons";
 import styles from "../styles/DashboardStyles";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "../constants/api";
 import BookAppointmentModal from "./modal/BookAppointmentModal";
+import SelfAssessmentModal from "./modal/SelfAssessmentModal";
 import BottomNavBar from "./layout/BottomNavBar";
 import { formatAppointmentDateTime } from "../service/helper/dateHelper";
+import messaging from '@react-native-firebase/messaging';
 
 const counselingLogo = require("../assets/Gabay.png");
 
@@ -27,41 +30,75 @@ export default function Dashboard({ onNavigate }) {
   const [refreshing, setRefreshing] = useState(false);
   const [studentName, setStudentName] = useState("");
   const [showBookModal, setShowBookModal] = useState(false);
+  const [showAssessmentModal, setShowAssessmentModal] = useState(false);
   const [activeScreen, setActiveScreen] = useState("dashboard");
+  const [assessmentQuestions, setAssessmentQuestions] = useState([]);
+  const [unansweredCount, setUnansweredCount] = useState(0);
 
-
-const fetchStudentInfo = async () => {
-  try {
-    
-    const studentId = await AsyncStorage.getItem("studentId");
-    const jwtToken = await AsyncStorage.getItem("jwtToken");
-    
-    if(!studentId || !jwtToken) {
-      console.log("Student id or Token is missing");
-      return; 
-    }
-    
-    const response = await fetch(
-      `${API_BASE_URL}/student/retrieve/profile/${studentId}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${jwtToken}`,
-        },
+  const fetchStudentInfo = async () => {
+    try {
+      const studentId = await AsyncStorage.getItem("studentId");
+      const jwtToken = await AsyncStorage.getItem("jwtToken");
+      
+      if(!studentId || !jwtToken) {
+        console.log("Student id or Token is missing");
+        return; 
       }
-    );
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    setStudentName(`${data?.person?.firstName} ${data?.person?.lastName}`);
+      
+      const response = await fetch(
+        `${API_BASE_URL}/student/retrieve/profile/${studentId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${jwtToken}`,
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setStudentName(`${data?.person?.firstName} ${data?.person?.lastName}`);
 
-  } catch(error) { 
-    console.log("Failed Loading Dashboard Info:", error);
-  }
-};
+    } catch(error) { 
+      console.log("Failed Loading Dashboard Info:", error);
+    }
+  };
+
+  const fetchAssessmentQuestions = async () => {
+    try {
+      const jwtToken = await AsyncStorage.getItem("jwtToken");
+      
+      if (!jwtToken) return;
+
+      const response = await fetch(
+        `${API_BASE_URL}/self-assessment/questions/unanswered`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${jwtToken}`,
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error('Failed to fetch questions');
+      
+      const data = await response.json();
+      console.log("Unanswered questions fetched:", data); 
+      console.log("First question structure:", data[0]); 
+      
+      setAssessmentQuestions(data);
+      setUnansweredCount(data.length);
+      
+      console.log("Total unanswered questions:", data.length);
+    } catch (error) {
+      console.error("Error fetching assessment questions:", error);
+    }
+  };
+
   const handleUnreadCount = async (userId) => {
     try {
       const token = await AsyncStorage.getItem("jwtToken");
@@ -110,11 +147,6 @@ const fetchStudentInfo = async () => {
       const data = await response.json();
       setAppointments(data);
 
-      if (data.length > 0 && data[0].student?.person) {
-        const person = data[0].student.person;
-        setStudentName(`${person.firstName} ${person.lastName}`);
-      }
-
       setLoading(false);
     } catch (error) {
       console.error("Error fetching appointments:", error);
@@ -133,7 +165,12 @@ const fetchStudentInfo = async () => {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await Promise.all([fetchUnreadCount(), fetchAppointments(), fetchStudentInfo()]);
+      await Promise.all([
+        fetchUnreadCount(), 
+        fetchAppointments(), 
+        fetchStudentInfo(),
+        fetchAssessmentQuestions()
+      ]);
     } catch (error) {
       console.error("Error refreshing data:", error);
     } finally {
@@ -146,10 +183,53 @@ const fetchStudentInfo = async () => {
     onNavigate(screen);
   };
 
+  const handleNotificationAction = (actionType) => {
+    console.log("Handling notification action:", actionType);
+    
+    switch(actionType) {
+      case 'APPOINTMENT_CREATED':
+      case 'APPOINTMENT_UPDATED':
+      case 'APPOINTMENT_CANCELLED':
+        fetchAppointments();
+        break;
+      case 'SELF ASSESSMENT UPDATE':
+        fetchAssessmentQuestions();
+        break;
+      default:
+        console.log("Unknown action type:", actionType);
+    }
+  };
+
   useEffect(() => {
     fetchUnreadCount();
     fetchAppointments();
     fetchStudentInfo();
+    fetchAssessmentQuestions();
+
+    
+    const unsubscribeForeground = messaging().onMessage(async remoteMessage => {
+      console.log('Foreground notification received:', remoteMessage);
+      
+      setUnread(prev => prev + 1);
+      
+      if (remoteMessage.data?.actionType) {
+        handleNotificationAction(remoteMessage.data.actionType);
+      }
+      
+    });
+
+
+    const appStateSubscription = AppState.addEventListener('change', nextAppState => {
+      if (nextAppState === 'active') {
+        console.log('App came to foreground, refreshing notification count...');
+        fetchUnreadCount();
+      }
+    });
+
+    return () => {
+      unsubscribeForeground();
+      appStateSubscription.remove();
+    };
   }, []);
 
   return (
@@ -184,9 +264,8 @@ const fetchStudentInfo = async () => {
             Welcome to{'\n'}Guidance & Counseling
           </Text>
           <View style={styles.studentInfoContainer}>
-            <Ionicons name="person" size={16} color="#64748B" style={styles.studentIcon} />
             <Text style={styles.welcomeSubtitle}>
-              {studentName || "Student"}
+             {`Hello, ${studentName || 'Student'}`}
             </Text>
           </View>
         </View>
@@ -197,26 +276,6 @@ const fetchStudentInfo = async () => {
               <ActivityIndicator size="large" color="#48BB78" />
               <Text style={styles.loadingText}>Loading appointments...</Text>
             </View>
-          ) : appointments.length === 0 ? (
-            <ScrollView
-              contentContainerStyle={styles.centerContent}
-              refreshControl={
-                <RefreshControl
-                  refreshing={refreshing}
-                  onRefresh={onRefresh}
-                  colors={["#48BB78"]}
-                  tintColor="#48BB78"
-                />
-              }
-            >
-              <View style={styles.emptyIconContainer}>
-                <Ionicons name="calendar-outline" size={56} color="#CBD5E0" />
-              </View>
-              <Text style={styles.emptyTitle}>No Upcoming Appointments</Text>
-              <Text style={styles.emptySubtitle}>
-                Book your first appointment to get started
-              </Text>
-            </ScrollView>
           ) : (
             <ScrollView
               style={styles.appointmentsList}
@@ -231,38 +290,71 @@ const fetchStudentInfo = async () => {
                 />
               }
             >
-              {appointments.map((appointment) => {
-                const counselorName = guidanceStaffFullname(appointment);
-                const { date, timeRange } = formatAppointmentDateTime(
-                  appointment.scheduledDate,
-                  appointment.endDate
-                );
-
-                return (
-                  <View key={appointment.appointmentId} style={styles.appointmentCard}>
-                    <Text style={styles.appointmentDateHeader}>
-                      {date.toUpperCase()}
+              {unansweredCount > 0 && (
+                <TouchableOpacity 
+                  style={styles.assessmentButton}
+                  onPress={() => setShowAssessmentModal(true)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.assessmentButtonContent}>
+                    <Ionicons name="clipboard-outline" size={20} color="#F59E0B" />
+                    <Text style={styles.assessmentButtonText}>
+                      Self-Assessments ({unansweredCount})
                     </Text>
-                    
-                    <View style={styles.timeRow}>
-                      <Ionicons name="time-outline" size={18} color="#334155" />
-                      <Text style={styles.appointmentTime}>
-                        {timeRange}
-                      </Text>
-                    </View>
-
-                    <Text style={styles.counselorName}>
-                      {counselorName}
-                    </Text>
-
-                    <View style={styles.appointmentTypeBadge}>
-                      <Text style={styles.appointmentTypeText}>
-                        {appointment.appointmentType}
-                      </Text>
-                    </View>
                   </View>
-                );
-              })}
+                  <Ionicons name="chevron-forward" size={18} color="#64748B" />
+                </TouchableOpacity>
+              )}
+
+              {appointments.length === 0 ? (
+                <View style={styles.emptyAppointmentsContainer}>
+                  <View style={styles.emptyIconContainer}>
+                    <Ionicons name="calendar-outline" size={56} color="#CBD5E0" />
+                  </View>
+                  <Text style={styles.emptyTitle}>No Upcoming Appointments</Text>
+                  <Text style={styles.emptySubtitle}>
+                    Book your first appointment to get started
+                  </Text>
+                </View>
+              ) : (
+                appointments.map((appointment) => {
+                  const counselorName = guidanceStaffFullname(appointment);
+                  const { date, timeRange } = formatAppointmentDateTime(
+                    appointment.scheduledDate,
+                    appointment.endDate
+                  );
+
+                  return (
+                    <View key={appointment.appointmentId} style={styles.appointmentCard}>
+                      <View style={styles.cardHeader}>
+                        <View style={styles.typeContainer}>
+                          <Text style={styles.appointmentType}>{appointment.appointmentType}</Text>
+                        </View>
+                        <View style={styles.statusBadge}>
+                          <Text style={styles.statusText}>{appointment.status}</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.cardBody}>
+                        <View style={styles.infoRow}>
+                          <Ionicons name="person-outline" size={16} color="#64748B" />
+                          <Text style={styles.infoValue}>{counselorName}</Text>
+                        </View>
+
+                        <View style={styles.infoRow}>
+                          <Ionicons name="calendar-outline" size={16} color="#64748B" />
+                          <Text style={styles.infoValue}>{date}</Text>
+                        </View>
+
+                        <View style={styles.infoRow}>
+                          <Ionicons name="time-outline" size={16} color="#64748B" />
+                          <Text style={styles.infoValue}>{timeRange}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })
+              )}
             </ScrollView>
           )}
         </View>
@@ -289,6 +381,16 @@ const fetchStudentInfo = async () => {
           visible={showBookModal}
           onClose={() => setShowBookModal(false)}
           onSuccess={() => fetchAppointments()}
+        />
+
+        <SelfAssessmentModal
+          visible={showAssessmentModal}
+          onClose={() => setShowAssessmentModal(false)}
+          questions={assessmentQuestions}
+          onAnswerSubmitted={() => {
+            fetchAssessmentQuestions();
+            setShowAssessmentModal(false);
+          }}
         />
       </View>
     </SafeAreaView>

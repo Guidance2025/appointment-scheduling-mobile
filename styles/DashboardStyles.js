@@ -65,6 +65,7 @@ export default StyleSheet.create({
     color: "#1B5E20",
     lineHeight: 36,
     marginBottom: 12,
+    lineHeight: 37,
     letterSpacing: 0.9,
   },
   studentInfoContainer: {
@@ -75,10 +76,12 @@ export default StyleSheet.create({
     marginRight: 6,
   },
   welcomeSubtitle: {
+    position: "relative",
+    left: 5,
     fontSize: 16,
-    color: "#4A5568",
+    color: "#252628ff",
     fontWeight: "400",
-    letterSpacing: 0.1,
+    letterSpacing: 0.4,
   },
 
   appointmentsContainer: {
@@ -97,6 +100,29 @@ export default StyleSheet.create({
     paddingBottom: 180,
   },
 
+  assessmentButton: {
+    backgroundColor: "#FFFBEB",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#FEF3C7",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  assessmentButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  assessmentButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#334155",
+    letterSpacing: 0.2,
+  },
+
   appointmentCard: {
     backgroundColor: "#F8FFFE",
     borderRadius: 16,
@@ -113,44 +139,47 @@ export default StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  appointmentDateHeader: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#64748B",
-    marginBottom: 10,
-    letterSpacing: 0.5,
-  },
-  timeRow: {
+  cardHeader: {
     flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 14,
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 16,
   },
-  appointmentTime: {
-    fontSize: 16,
+  typeContainer: {
+    flex: 1,
+    marginRight: 12,
+  },
+  appointmentType: {
+    fontSize: 18,
     fontWeight: "700",
     color: "#1E293B",
-    marginLeft: 8,
     letterSpacing: 0.2,
   },
-  counselorName: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#475569",
-    marginBottom: 12,
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    backgroundColor: "#3B82F620",
   },
-  appointmentTypeBadge: {
-    backgroundColor: "#DBEAFE",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignSelf: "flex-start",
-  },
-  appointmentTypeText: {
-    
-    fontSize: 13,
+  statusText: {
+    fontSize: 12,
     fontWeight: "700",
-    color: "#1E40AF",
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
+    color: "#3B82F6",
+  },
+  cardBody: {
+    gap: 12,
+  },
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  infoValue: {
+    fontSize: 14,
+    color: "#475569",
+    fontWeight: "500",
+    lineHeight: 20,
+    marginLeft: 8,
   },
 
   bookButtonContainer: {
@@ -163,8 +192,10 @@ export default StyleSheet.create({
     paddingVertical: 12,
   },
   bookButton: {
+    position: "relative",
+    bottom: 20,
     backgroundColor: "#48BB78",
-    borderRadius: 18,
+    borderRadius: 9,
     paddingVertical: 18,
     paddingHorizontal: 24,
     alignItems: "center",
@@ -189,7 +220,6 @@ export default StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // Bottom Navigation Bar
   navBar: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -236,6 +266,12 @@ export default StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 40,
     paddingTop: 60,
+  },
+  emptyAppointmentsContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 60,
+    paddingHorizontal: 40,
   },
   emptyIconContainer: {
     width: 100,

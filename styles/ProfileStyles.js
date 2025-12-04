@@ -4,171 +4,242 @@ export default StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#E8F5E9",
-    paddingTop: Platform.OS === 'android' ? 30 : 0,
+    paddingTop: Platform.OS === 'android' ? 50 : 0,
   },
   scrollContainer: { 
-    paddingHorizontal: 18, 
-    paddingTop: 30, 
+    paddingHorizontal: 20, 
+    paddingTop: 20, 
     paddingBottom: 140 
   },
-  topRow: { 
-    flexDirection: "row", 
-    alignItems: "center", 
-    marginBottom: 18 
-  },
-  avatar: { 
-    width: 72, 
-    height: 72, 
-    borderRadius: 12 
-  },
-  name: { 
-    fontSize: 18, 
-    fontWeight: "700", 
-    color: "#333", 
-  },
-  role: { 
-    fontSize: 13, 
-    color: "#666", 
-    marginTop: 4 
-  },
 
-  card: {
+  header: {
     backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 16,
+    borderRadius: 8,
+    padding: 20,
+    marginBottom: 16,
+    flexDirection: "row",
+    alignItems: "center",
     shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
     elevation: 2,
   },
+
+  avatarContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 32,
+    backgroundColor: "#48BB78",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
+  },
+  avatarText: {
+    fontSize: 20,
+    fontWeight: "500",
+    color: "#fff",
+    letterSpacing: 0.5,
+  },
+
+  headerInfo: { flex: 1 },
+
+  name: { 
+    fontSize: 20, 
+    fontWeight: "700", 
+    color: "#1E293B",
+    marginBottom: 4,
+    letterSpacing: 0.3,
+  },
+  role: { 
+    fontSize: 14, 
+    color: "#64748B",
+    fontWeight: "500",
+  },
+
+  // Card Section
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  infoContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
   label: { 
-    fontSize: 13, 
-    color: "#777", 
-    marginTop: 8 
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#64748B",
+    marginBottom: 6,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
   value: { 
     fontSize: 15, 
-    color: "#111", 
-    marginTop: 4 
+    color: "#1E293B",
+    fontWeight: "500",
+    letterSpacing: 0.2,
+  },
+
+  input: {
+    fontSize: 15,
+    color: "#1E293B",
+    fontWeight: "500",
+    borderWidth: 1,
+    borderColor: "#D1FAE5",
+    borderRadius: 10,
+    padding: 12,
+    backgroundColor: "#F0FDF4",
+  },
+  textArea: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+
+  // ⭐ Horizontal Buttons (Edit Profile + Logout)
+  buttonRowTop: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 20,
   },
 
   editBtn: {
-    backgroundColor: '#6bdc83ff',
-    borderColor : "#fcfcfcff",
-    borderWidth : 1,
-    paddingVertical: 9,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    marginTop: 16,
+    flex: 1,
+    backgroundColor: '#63bd88f1',
+    paddingVertical: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#5fcc77ff',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowColor: '#48BB78',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 6,
   },
   editText: {
-    color: '#eef5f0ff',
+    color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     letterSpacing: 0.5,
   },
 
-  saveBtn: {
-    backgroundColor: ' rgb(46, 184, 53)',
-    borderColor : "#5fcc77ff",
-    borderWidth : 1,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginTop: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#5fcc77ff',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  saveText: {
-    color: '#f1f5f2ff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
-  cancelBtn: {
-   backgroundColor: '#ffffffff',
-    borderColor : "#e64e4eff",
-    borderWidth : 1,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginTop: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#dc3545',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  cancelText: {
-    color: '#e64e4eff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
   logoutBtn: {
-    backgroundColor: '#ffffffff',
-    borderColor : "#e64e4eff",
-    borderWidth : 1,
-    paddingVertical: 9,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    marginTop: 16,
+    flex: 1,
+    backgroundColor: '#fff',
+    borderColor: "#ef44445d",
+    borderWidth: 2,
+    paddingVertical: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#dc3545',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+  },
+  logoutText: {
+    color: '#EF4444',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 20,
+  },
+
+  saveBtn: {
+    flex: 1,
+    backgroundColor: '#63bd88f1',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#48BB78',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 6,
   },
-  logoutText: {
-    color: '#df4646ff',
-    fontSize: 16,
-    fontWeight: '600',
+  saveText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
     letterSpacing: 0.5,
   },
 
-  navBar: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    backgroundColor: "#48BB78",
+  cancelBtn: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderColor: "#ef44445d",
+    borderWidth: 2,
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelText: {
+    color: '#EF4444',
+    fontSize: 15,
+    letterSpacing: 0.5,
+  },
+
+  // Loading & Error
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    color: '#64748B',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 16,
+    marginBottom: 24,
+    fontWeight: '600',
+  },
+  retryButton: {
+    backgroundColor: '#48BB78',
     paddingVertical: 12,
-    position: "absolute",
-    bottom: 0,
-    width: "100%",
+    paddingHorizontal: 32,
+    borderRadius: 8,
+    shadowColor: '#48BB78',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  navItem: { 
-    alignItems: "center" 
-  },
-  navLabel: { 
-    color: "#949494ff", 
-    fontSize: 11, 
-    marginTop: 2 
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });

@@ -8,7 +8,12 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import styles from "../styles/ProfileStyles";
 import BottomNavBar from "./layout/BottomNavBar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -131,6 +136,7 @@ export default function Profile({ onNavigate }) {
       setProfileData(updatedStudent);
       setIsEditing(false);
       setShowSuccess(true);
+      Keyboard.dismiss();
       
     } catch (err) {
       console.error('Profile update error:', err);
@@ -140,7 +146,11 @@ export default function Profile({ onNavigate }) {
           err.message.includes('409') ||
           err.message.includes('CONFLICT')
       )) {
-       showError(true);
+        Alert.alert(
+          'Error',
+          'This email address is already in use. Please use a different email.',
+          [{ text: 'OK' }]
+        );
       } else {
         Alert.alert(
           'Error',
@@ -162,32 +172,16 @@ export default function Profile({ onNavigate }) {
       });
     }
     setIsEditing(false);
+    Keyboard.dismiss();
   };
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel'
-        },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {       
-              await AsyncStorage.multiRemove(['jwtToken', 'studentId']);
-              onNavigate('login');
-            } catch (err) {
-              console.error('Logout error:', err);
-              Alert.alert('Error', 'Failed to logout. Please try again.');
-            } 
-          } 
-        }
-      ]
-    );
+  const handleLogout = async () => {
+    try {
+      await AsyncStorage.multiRemove(['jwtToken', 'studentId']);
+      onNavigate('login');
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
   };
 
   const handleNavigation = (screen) => {
@@ -201,12 +195,18 @@ export default function Profile({ onNavigate }) {
     return `${firstName || ""} ${middleName ? middleName + " " : ""}${lastName || ""}`.trim();
   };
 
+  const getInitials = () => {
+    if (!profileData?.person) return "U";
+    const { firstName, lastName } = profileData.person;
+    return `${firstName?.[0] || ""}${lastName?.[0] || ""}`.toUpperCase();
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={[styles.scrollContainer, { justifyContent: 'center', alignItems: 'center' }]}>
-          <ActivityIndicator size="large" color="#0066cc" />
-          <Text style={{ marginTop: 10, color: '#666' }}>Loading profile...</Text>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#48BB78" />
+          <Text style={styles.loadingText}>Loading profile...</Text>
         </View>
         <BottomNavBar
           activeScreen={activeScreen}
@@ -219,15 +219,14 @@ export default function Profile({ onNavigate }) {
   if (error && !profileData) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={[styles.scrollContainer, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
-          <Text style={{ color: '#d32f2f', fontSize: 16, textAlign: 'center', marginBottom: 20 }}>
-            Unable to load profile data
-          </Text>
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={64} color="#EF4444" />
+          <Text style={styles.errorText}>Unable to load profile data</Text>
           <TouchableOpacity 
-            style={[styles.editBtn, { backgroundColor: '#0066cc' }]}
+            style={styles.retryButton}
             onPress={getProfile}
           >
-            <Text style={styles.editText}>Retry</Text>
+            <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
         <BottomNavBar
@@ -240,138 +239,156 @@ export default function Profile({ onNavigate }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        <View style={styles.topRow}>
-          <View style={{ marginLeft: 14 }}>
-            <Text style={styles.name}>
-              {getFullName()}
-            </Text>
-            <Text style={styles.role}>
-              {profileData?.section?.course || "N/A"} - {profileData?.section?.organization || "N/A"}
-            </Text>
-          </View>
-        </View>
-        
-        <View style={styles.card}>
-          <Text style={styles.label}>Student Number</Text>
-          <Text style={styles.value}>
-            {profileData?.studentNumber || "N/A"}
-          </Text>
-
-          <Text style={[styles.label, { marginTop: 16 }]}>E-mail Address</Text>
-          {isEditing ? (
-            <TextInput
-              style={[styles.value, { 
-                borderWidth: 1, 
-                borderColor: '#ddd', 
-                borderRadius: 8, 
-                padding: 10,
-                backgroundColor: '#f9f9f9'
-              }]}
-              value={editForm.email}
-              onChangeText={(text) => setEditForm({ ...editForm, email: text })}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              editable={!isSaving}
-            />
-          ) : (
-            <Text style={styles.value}>
-              {profileData?.person?.email || "N/A"}
-            </Text>
-          )}
-
-          <Text style={[styles.label, { marginTop: 16 }]}>Phone Number</Text>
-          {isEditing ? (
-            <TextInput
-              style={[styles.value, { 
-                borderWidth: 1, 
-                borderColor: '#ddd', 
-                borderRadius: 8, 
-                padding: 10,
-                backgroundColor: '#f9f9f9'
-              }]}
-              value={editForm.contactNumber}
-              onChangeText={(text) => setEditForm({ ...editForm, contactNumber: text })}
-              keyboardType="phone-pad"
-              editable={!isSaving}
-            />
-          ) : (
-            <Text style={styles.value}>
-              {profileData?.person?.contactNumber || "N/A"}
-            </Text>
-          )}
-
-          <Text style={[styles.label, { marginTop: 16 }]}>Address</Text>
-          {isEditing ? (
-            <TextInput
-              style={[styles.value, { 
-                borderWidth: 1, 
-                borderColor: '#ddd', 
-                borderRadius: 8, 
-                padding: 10,
-                backgroundColor: '#f9f9f9',
-                minHeight: 60
-              }]}
-              value={editForm.address}
-              onChangeText={(text) => setEditForm({ ...editForm, address: text })}
-              multiline
-              numberOfLines={3}
-              editable={!isSaving}
-            />
-          ) : (
-            <Text style={styles.value}>
-              {profileData?.person?.address || "N/A"}
-            </Text>
-          )}
-
-          <Text style={[styles.label, { marginTop: 16 }]}>Section</Text>
-          <Text style={styles.value}>
-            {profileData?.section?.sectionName || "N/A"}
-          </Text>
-
-          {isEditing ? (
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity 
-                style={styles.saveBtn}
-                onPress={handleSaveProfile}
-                disabled={isSaving}
-              >
-                {isSaving ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.saveText}>Save Changes</Text>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.cancelBtn}
-                onPress={handleCancelEdit}
-                disabled={isSaving}
-              >
-                <Text style={styles.cancelText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity 
-              style={styles.editBtn}
-              onPress={() => setIsEditing(true)}
-            >
-              <Text style={styles.editText}>Edit Details</Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity 
-            style={styles.logoutBtn}
-            onPress={handleLogout}
-            disabled={isEditing}
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView 
+            contentContainerStyle={styles.scrollContainer} 
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+            <View style={styles.header}>
+              <View style={styles.avatarContainer}>
+                <Text style={styles.avatarText}>{getInitials()}</Text>
+              </View>
+              <View style={styles.headerInfo}>
+                <Text style={styles.name}>{getFullName()}</Text>
+                <Text style={styles.role}>
+                  {profileData?.section?.course || "N/A"} - {profileData?.section?.organization || "N/A"}
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.card}>
+              <View style={styles.infoRow}>
+                <Ionicons name="school-outline" size={18} color="#64748B" />
+                <View style={styles.infoContent}>
+                  <Text style={styles.label}>Student Number</Text>
+                  <Text style={styles.value}>{profileData?.studentNumber || "N/A"}</Text>
+                </View>
+              </View>
+
+              <View style={styles.infoRow}>
+                <Ionicons name="mail-outline" size={18} color="#64748B" />
+                <View style={styles.infoContent}>
+                  <Text style={styles.label}>Email Address</Text>
+                  {isEditing ? (
+                    <TextInput
+                      style={styles.input}
+                      value={editForm.email}
+                      onChangeText={(text) => setEditForm({ ...editForm, email: text })}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      editable={!isSaving}
+                      returnKeyType="next"
+                    />
+                  ) : (
+                    <Text style={styles.value}>{profileData?.person?.email || "N/A"}</Text>
+                  )}
+                </View>
+              </View>
+
+              <View style={styles.infoRow}>
+                <Ionicons name="call-outline" size={18} color="#64748B" />
+                <View style={styles.infoContent}>
+                  <Text style={styles.label}>Phone Number</Text>
+                  {isEditing ? (
+                    <TextInput
+                      style={styles.input}
+                      value={editForm.contactNumber}
+                      onChangeText={(text) => setEditForm({ ...editForm, contactNumber: text })}
+                      keyboardType="phone-pad"
+                      editable={!isSaving}
+                      returnKeyType="next"
+                    />
+                  ) : (
+                    <Text style={styles.value}>{profileData?.person?.contactNumber || "N/A"}</Text>
+                  )}
+                </View>
+              </View>
+
+              <View style={styles.infoRow}>
+                <Ionicons name="location-outline" size={18} color="#64748B" />
+                <View style={styles.infoContent}>
+                  <Text style={styles.label}>Address</Text>
+                  {isEditing ? (
+                    <TextInput
+                      style={[styles.input, styles.textArea]}
+                      value={editForm.address}
+                      onChangeText={(text) => setEditForm({ ...editForm, address: text })}
+                      multiline
+                      numberOfLines={3}
+                      editable={!isSaving}
+                      returnKeyType="done"
+                      blurOnSubmit={true}
+                    />
+                  ) : (
+                    <Text style={styles.value}>{profileData?.person?.address || "N/A"}</Text>
+                  )}
+                </View>
+              </View>
+
+              <View style={styles.infoRow}>
+                <Ionicons name="people-outline" size={18} color="#64748B" />
+                <View style={styles.infoContent}>
+                  <Text style={styles.label}>Section</Text>
+                  <Text style={styles.value}>{profileData?.section?.sectionName || "N/A"}</Text>
+                </View>
+              </View>
+
+              {isEditing ? (
+                <View style={styles.buttonRow}>
+                  <TouchableOpacity 
+                    style={styles.saveBtn}
+                    onPress={handleSaveProfile}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.saveText}>Save</Text>
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity 
+                    style={styles.cancelBtn}
+                    onPress={handleCancelEdit}
+                    disabled={isSaving}
+                  >
+                    <Text style={styles.cancelText}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.buttonRow}>
+                  <TouchableOpacity 
+                    style={[styles.editBtn, { flex: 1 }]}
+                    onPress={() => setIsEditing(true)}
+                  >
+                    <Ionicons name="create-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
+                    <Text style={styles.editText}>Edit Profile</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity 
+                    style={[styles.logoutBtn, { flex: 1 }]}
+                    onPress={handleLogout}
+                  >
+                    <Ionicons name="log-out-outline" size={18} color="#EF4444" style={{ marginRight: 8 }} />
+                    <Text style={styles.logoutText}>Logout</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+            {isEditing && <View style={{ height: 100 }} />}
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
 
       <SuccessMessage
         visible={showSuccess}
-        message={"Updated Successfully"}
+        message={"Profile Updated Successfully"}
         onClose={() => setShowSuccess(false)}
       />
 

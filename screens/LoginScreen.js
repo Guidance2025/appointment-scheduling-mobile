@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { View, TextInput, Text, Pressable, Image } from "react-native";
+import { 
+  View, 
+  TextInput, 
+  Text, 
+  Pressable, 
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  TouchableWithoutFeedback,
+  Keyboard
+} from "react-native";
 import LoginStyles from "../styles/LoginStyles";
 import GabayLogo from "../assets/Gabay.png";
 
@@ -48,11 +59,9 @@ const LoginScreen = ({ onNavigate }) => {
     } catch (err) {
       console.error("Login error:", err);
       
-      
       let errorMessage = "An error occurred. Please try again.";
       
       if (err.message) {
-        
         if (err.message.includes("USERNAME/PASSWORD IS INCORRECT") || 
             err.message.includes("BAD_REQUEST") ||
             err.message.includes("400")) {
@@ -66,7 +75,6 @@ const LoginScreen = ({ onNavigate }) => {
                  err.message.includes("Failed to fetch")) {
           errorMessage = "Network error. Please check your connection.";
         }
-        
         else if (err.message && !err.message.includes("{")) {
           errorMessage = err.message;
         }
@@ -79,53 +87,69 @@ const LoginScreen = ({ onNavigate }) => {
   };
 
   return (
-    <View style={LoginStyles.container}>
-      <Image source={GabayLogo} style={{ width: 120, height: 120 }} />
-      <Text style={LoginStyles.title}>GABAY</Text>
-      {error && (
-        <View style={LoginStyles.errorMessage}>
-          <Text style={LoginStyles.errorText}>{error}</Text>
-        </View>
-      )}
-      <View style={LoginStyles.formContainer}>
-        <Text style={LoginStyles.label}>Username</Text>
-        <TextInput
-          style={LoginStyles.textField}
-          value={username}
-          onChangeText={(text) => {
-            setUsername(text);
-            setError(""); 
-          }}
-          placeholder="Enter your username"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        <Text style={LoginStyles.label}>Password</Text>
-        <TextInput
-          style={LoginStyles.textField}
-          value={password}
-          onChangeText={(text) => {
-            setPassword(text);
-            setError(""); 
-          }}
-          secureTextEntry
-          placeholder="Enter your password"
-        />
-        <Pressable
-          style={({ pressed }) => [
-            LoginStyles.button,
-            pressed && LoginStyles.buttonPressed,
-            isLoading && LoginStyles.buttonLoading,
-          ]}
-          onPress={handleLogin}
-          disabled={isLoading}
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1 }}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView 
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={LoginStyles.loginLabel}>
-            {isLoading ? "Logging in..." : "Login"}
-          </Text>
-        </Pressable>
-      </View>
-    </View>
+          <View style={LoginStyles.container}>
+            <Image source={GabayLogo} style={{ width: 120, height: 120 }} />
+            <Text style={LoginStyles.title}>GABAY</Text>
+            {error && (
+              <View style={LoginStyles.errorMessage}>
+                <Text style={LoginStyles.errorText}>{error}</Text>
+              </View>
+            )}
+            <View style={LoginStyles.formContainer}>
+              <Text style={LoginStyles.label}>Username</Text>
+              <TextInput
+                style={LoginStyles.textField}
+                value={username}
+                onChangeText={(text) => {
+                  setUsername(text);
+                  setError(""); 
+                }}
+                placeholder="Enter your username"
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="next"
+              />
+              <Text style={LoginStyles.label}>Password</Text>
+              <TextInput
+                style={LoginStyles.textField}
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  setError(""); 
+                }}
+                secureTextEntry
+                placeholder="Enter your password"
+                returnKeyType="done"
+                onSubmitEditing={handleLogin}
+              />
+              <Pressable
+                style={({ pressed }) => [
+                  LoginStyles.button,
+                  pressed && LoginStyles.buttonPressed,
+                  isLoading && LoginStyles.buttonLoading,
+                ]}
+                onPress={handleLogin}
+                disabled={isLoading}
+              >
+                <Text style={LoginStyles.loginLabel}>
+                  {isLoading ? "Logging in..." : "Login"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 };
 
