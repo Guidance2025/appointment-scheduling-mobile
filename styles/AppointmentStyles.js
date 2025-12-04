@@ -4,7 +4,7 @@ export default StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#E8F5E9",
-    paddingTop: Platform.OS === 'android' ? 30 : 0,
+    paddingTop: Platform.OS === 'android' ? 40 : 0,
   },
   container: {
     flex: 1,
@@ -30,7 +30,9 @@ export default StyleSheet.create({
     paddingBottom: 20,
   },
   headerTitle: {
-    fontSize: 28,
+    position: "relative",
+    left: -6,
+    fontSize: 25,
     fontWeight: "800",
     color: "#1B5E20",
     marginBottom: 6,

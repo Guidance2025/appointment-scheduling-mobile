@@ -23,19 +23,46 @@ export default function Notification({ onNavigate }) {
   const [refreshing, setRefreshing] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [isDisabled, setIsDisabled] = useState(false);
-  const [activeScreen,setIsActiveScreen] = useState("notification")
+  const [activeScreen, setIsActiveScreen] = useState("notification");
+
+  const getActionTypeLabel = (actionType) => {
+    const labels = {
+      APPOINTMENT_REQUEST: "Appointment Request",
+      ACCEPT: "Appointment Accepted",
+      DECLINE: "Appointment Declined",
+    };
+    return labels[actionType] || actionType;
+  };
+
+  const getNotificationStyle = (notif) => {
+    const styles_array = [styles.notifCard];
+    
+    if (notif.isRead === 0) {
+      styles_array.push(styles.notifCardUnread);
+    }
+    
+    if (notif.actionType === "ACCEPT") {
+      styles_array.push(styles.notifCardAccepted);
+    } else if (notif.actionType === "DECLINE") {
+      styles_array.push(styles.notifCardDeclined);
+    } else if (notif.actionType === "APPOINTMENT_REQUEST") {
+      styles_array.push(styles.notifCardRequest);
+    }else if (notif.actionType === "APPOINTMENT_REMINDER") {
+      styles_array.push(styles.notifCardReminder);
+    }
+    
+    return styles_array;
+  };
 
   const getAllNotifications = async () => {
     try {
-      const token =  await AsyncStorage.getItem("jwtToken");
+      const token = await AsyncStorage.getItem("jwtToken");
       const userId = await AsyncStorage.getItem("userId");
 
       if (!token || !userId) {
         console.error("No token or userId found");
         return;
       }
-
-      console.log("Fetching notifications for user:", userId);
 
       const response = await fetch(`${API_BASE_URL}/notification/${userId}`, {
         method: "GET",
@@ -51,7 +78,7 @@ export default function Notification({ onNavigate }) {
       }
 
       const data = await response.json();
-      console.log("Notifications received:", data);
+      data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setNotifications(data);
     } catch (error) {
       console.error("Error fetching notifications:", error);
@@ -73,15 +100,12 @@ export default function Notification({ onNavigate }) {
   const handleNavigation = (screen) => {
     setIsActiveScreen(screen);
     onNavigate(screen);
-
-  }
-  
+  };
 
   const respondToAppointment = async (appointmentId, action) => {
     const token = await AsyncStorage.getItem("jwtToken");
 
     try {
-
       setLoading(true);
       const response = await fetch(
         `${API_BASE_URL}/counselor/${appointmentId}/response`,
@@ -91,9 +115,7 @@ export default function Notification({ onNavigate }) {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            action: action,
-          }),
+          body: JSON.stringify({ action }),
         }
       );
 
@@ -102,10 +124,7 @@ export default function Notification({ onNavigate }) {
         throw new Error(`Failed to respond: ${errorText}`);
       }
 
-      const data = await response.json();
-      console.log("Response successful:", data);
-
-      return data;
+      return await response.json();
     } catch (error) {
       console.error("Error responding to appointment:", error);
       throw error;
@@ -120,11 +139,10 @@ export default function Notification({ onNavigate }) {
       await respondToAppointment(appointmentId, "ACCEPT");
       alert("Appointment accepted successfully");
       setSelected(null);
-
       getAllNotifications();
     } catch (error) {
       alert("Failed to accept appointment");
-    }finally{
+    } finally {
       setIsDisabled(false);
     }
   };
@@ -138,7 +156,7 @@ export default function Notification({ onNavigate }) {
       getAllNotifications();
     } catch (error) {
       alert("Failed to decline appointment");
-    } finally{
+    } finally {
       setIsDisabled(false);
     }
   };
@@ -160,7 +178,8 @@ export default function Notification({ onNavigate }) {
   const markAsRead = async (notificationId) => {
     try {
       const token = await AsyncStorage.getItem("jwtToken");
-       await fetch(`${API_BASE_URL}/notification/markAsRead/mobile/${notificationId}`,
+      await fetch(
+        `${API_BASE_URL}/notification/markAsRead/mobile/${notificationId}`,
         {
           method: "PATCH",
           headers: {
@@ -173,160 +192,134 @@ export default function Notification({ onNavigate }) {
     } catch (error) {
       console.error("Error marking notification as read:", error);
     }
-  }
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={() => onNavigate("dashboard")}>
-            <Feather name="arrow-left" size={22} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Notifications</Text>
-          <View style={{ width: 22 }} />
-        </View>
+  };
 
-        <ScrollView
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-        >
-          {initialLoading ? (
-            <View style={{ padding: 20, alignItems: "center" }}>
-              <ActivityIndicator size="large" color="#0066cc" />
-              <Text style={{ marginTop: 10, color: "#666" }}>
-                Loading notifications...
-              </Text>
-            </View>
-          ) : notifications.length === 0 ? (
-            <View style={{ padding: 20, alignItems: "center" }}>
-              <Text style={{ color: "#666", fontSize: 16 }}>
-                No notifications yet
-              </Text>
-            </View>
-          ) : (
-            notifications.map((notif) => (
-              <TouchableOpacity
-                key={notif.notificationId}
-                style={[
-                  styles.notifCard,
-                  notif.isRead === 0 && { backgroundColor: "#e3f2fd" },
-                  notif.actionType === "DECLINE" && {backgroundColor : "#f6dad8fc", color : "white"} ,
-                  notif.actionType === "ACCEPT" && {backgroundColor : "#bfe7d1ff" , color : "#e3f2fd"}
-                ]}
-                onPress={() => {
-                  setSelected(notif);
-                  markAsRead(notif.notificationId);
-                }}  
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.notifTitle} numberOfLines={2}>
-                    {notif.message || "New notification"}
-                  </Text>
-                  <Text style={styles.notifDate}>
-                    {formatDate(notif.createdAt)}
-                  </Text>
-                </View>
-                <View style={styles.notifRight}>
-                  {notif.isRead === 0 && (
-                    <View
-                      style={{
-                        position : "absolute",
-                        right:-13,
-                        top: -4,
-                        width: 8,
-                        height: 8,
-                        borderRadius: 4,
-                        backgroundColor: "#0066cc",
-                        marginRight: 8,
-                      }}
-                    />
-                  )}
-                </View>
-              </TouchableOpacity>
-            ))
-          )}
-        </ScrollView>
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.headerRow}>
+        <TouchableOpacity onPress={() => onNavigate("dashboard")}>
+          <Feather name="arrow-left" size={22} color="#111827" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Notifications</Text>
+        <View style={{ width: 22 }} />
+      </View>
 
-        <Modal visible={!!selected} animationType="slide" transparent>
-          <TouchableWithoutFeedback onPress={() => setSelected(null)}>
-            <View style={styles.modalBackdrop} />
-          </TouchableWithoutFeedback>
+      <ScrollView
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {initialLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#3b82f6" />
+            <Text style={styles.loadingText}>Loading notifications...</Text>
+          </View>
+        ) : notifications.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No notifications yet</Text>
+          </View>
+        ) : (
+          notifications.map((notif) => (
+            <TouchableOpacity
+              key={notif.notificationId}
+              style={getNotificationStyle(notif)}
+              onPress={() => {
+                setSelected(notif);
+                markAsRead(notif.notificationId);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.notifLeft}>
+                <Text style={styles.notifType}>
+                  {getActionTypeLabel(notif.actionType)}
+                </Text>
+                <Text style={styles.notifTitle} numberOfLines={2}>
+                  {notif.message || "New notification"}
+                </Text>
+                <Text style={styles.notifDate}>
+                  {formatDate(notif.createdAt)}
+                </Text>
+              </View>
+              <View style={styles.notifRight}>
+                {notif.isRead === 0 && <View style={styles.unreadIndicator} />}
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
+      </ScrollView>
 
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>
-              {selected?.actionType || "Notification"}
+      <Modal visible={!!selected} animationType="slide" transparent>
+        <TouchableWithoutFeedback onPress={() => setSelected(null)}>
+          <View style={styles.modalBackdrop} />
+        </TouchableWithoutFeedback>
+
+        <View style={styles.modalSheet}>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>
+            {getActionTypeLabel(selected?.actionType)}
+          </Text>
+          <Text style={styles.modalDate}>
+            {formatDate(selected?.createdAt)}
+          </Text>
+          <ScrollView style={{ marginTop: 10 }}>
+            <Text style={styles.modalDetails}>
+              {selected?.message || "No details available"}
             </Text>
-            <Text style={styles.modalDate}>
-              {formatDate(selected?.createdAt)}
-            </Text>
-            <ScrollView style={{ marginTop: 10 }}>
-              <Text style={styles.modalDetails}>
-                {selected?.message || "No details available"}
-              </Text>
-            </ScrollView>
+          </ScrollView>
 
-            {selected?.actionType === "APPOINTMENT_REQUEST" && (
-              <View style={{ flexDirection: "row", marginTop: 20 }}>
+          {selected?.actionType === "APPOINTMENT_REQUEST" &&
+            selected?.appointment?.status === "PENDING" && (
+              <View style={styles.actionButtonContainer}>
                 <TouchableOpacity
                   style={[
-                    styles.modalBackBtn,
-                    { backgroundColor: (loading || isDisabled || selected.appointment?.status !== "PENDING") ?  "#535353ff" : "#4CAF50",
-                     flex: 1, 
-                     marginRight: 5, 
-                     opacity: (loading || isDisabled || selected?.appointment?.status !== "PENDING") ? 0.5 : 1
-                     },
+                    styles.acceptButton,
+                    (loading || isDisabled) && styles.acceptButtonDisabled,
                   ]}
                   onPress={() =>
                     handleAccept(selected?.appointment.appointmentId)
                   }
-                  disabled={loading 
-                  || isDisabled ||
-                  selected?.appointment?.status !== "PENDING"
-                  }
+                  disabled={loading || isDisabled}
+                  activeOpacity={0.8}
                 >
-                  <Text style={styles.modalBackText}>
+                  <Text style={styles.actionButtonText}>
                     {loading ? "Processing..." : "Accept"}
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={[
-                    styles.modalBackBtn,
-                    {
-                       backgroundColor: (loading|| isDisabled || selected?.appointment?.status !== "PENDING") ?  "#535353ff" :"#f44336", 
-                       flex: 1, 
-                       marginLeft: 5, 
-                       opacity: (loading|| isDisabled || selected?.appointment?.status !== "PENDING") ? 0.5 : 1
-                       },
+                    styles.declineButton,
+                    (loading || isDisabled) && styles.declineButtonDisabled,
                   ]}
                   onPress={() =>
                     handleDecline(selected?.appointment.appointmentId)
                   }
-                  disabled={loading || isDisabled || selected?.appointment?.status !== "PENDING" }
+                  disabled={loading || isDisabled}
+                  activeOpacity={0.8}
                 >
-                  <Text style={styles.modalBackText}>
+                  <Text style={styles.actionButtonText}>
                     {loading ? "Processing..." : "Decline"}
                   </Text>
                 </TouchableOpacity>
               </View>
             )}
 
-            <TouchableOpacity
-              style={[styles.modalBackBtn, { marginTop: 10 }]}
-              onPress={() => setSelected(null)}
-            >
-              <Text style={styles.modalBackText}>Back</Text>
-            </TouchableOpacity>
-          </View>
-        </Modal>
-       <BottomNavBar
-         activeScreen={activeScreen}
-         onNavigate={handleNavigation}     
-        />
-        
-      </SafeAreaView>
-    );
-  };
+          <TouchableOpacity
+            style={styles.modalBackBtn}
+            onPress={() => setSelected(null)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.modalBackText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
 
+      <BottomNavBar
+        activeScreen={activeScreen}
+        onNavigate={handleNavigation}
+      />
+    </SafeAreaView>
+  );
+}

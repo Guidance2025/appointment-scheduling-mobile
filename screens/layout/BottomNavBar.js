@@ -12,7 +12,6 @@ export default function BottomNavBar({ activeScreen, onNavigate }) {
 
   return (
     <View style={styles.navBar}>
-      {/* Home */}
       <TouchableOpacity 
         style={styles.navItem} 
         onPress={() => onNavigate("dashboard")}
@@ -20,7 +19,7 @@ export default function BottomNavBar({ activeScreen, onNavigate }) {
       >
         <Ionicons 
           name="home" 
-          size={26} 
+          size={23} 
           color={activeScreen === 'dashboard' ? '#48BB78' : '#64748B'} 
         />
         <Text style={[
@@ -31,7 +30,6 @@ export default function BottomNavBar({ activeScreen, onNavigate }) {
         </Text>
       </TouchableOpacity>
 
-      {/* Appointments */}
       <TouchableOpacity 
         style={styles.navItem} 
         onPress={() => onNavigate("appointments")}
@@ -39,7 +37,7 @@ export default function BottomNavBar({ activeScreen, onNavigate }) {
       >
         <Ionicons 
           name="calendar-outline" 
-          size={26} 
+          size={23} 
           color={activeScreen === 'appointments' ? '#48BB78' : '#64748B'} 
         />
         <Text style={[
@@ -50,7 +48,6 @@ export default function BottomNavBar({ activeScreen, onNavigate }) {
         </Text>
       </TouchableOpacity>
 
-      {/* Profile */}
       <TouchableOpacity 
         style={styles.navItem} 
         onPress={() => onNavigate("profile")}
@@ -58,7 +55,7 @@ export default function BottomNavBar({ activeScreen, onNavigate }) {
       >
         <Ionicons 
           name="person-circle-outline" 
-          size={26} 
+          size={23} 
           color={activeScreen === 'profile' ? '#48BB78' : '#64748B'} 
         />
         <Text style={[
@@ -69,7 +66,7 @@ export default function BottomNavBar({ activeScreen, onNavigate }) {
         </Text>
       </TouchableOpacity>
 
-      {/* Menu */}
+
       <TouchableOpacity
         style={styles.navItem}
         onPress={() => setMenuOpen((v) => !v)}
@@ -77,7 +74,7 @@ export default function BottomNavBar({ activeScreen, onNavigate }) {
       >
         <Ionicons
           name="ellipsis-horizontal"
-          size={26}
+          size={23}
           color={menuOpen ? '#48BB78' : '#64748B'}
         />
         <Text style={[styles.navLabel, menuOpen && styles.navLabelActive]}>
@@ -161,7 +158,7 @@ const styles = StyleSheet.create({
     minWidth: 70,
   },
   navLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
     color: "#64748B",
     marginTop: 4,

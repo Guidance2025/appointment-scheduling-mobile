@@ -128,7 +128,7 @@ export default function Appointment({ onNavigate }) {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>My Appointments</Text>
+          <Text style={styles.headerTitle}> Appointments</Text>
           <Text style={styles.headerSubtitle}>
             {filteredAppointments.length} {filteredAppointments.length === 1 ? "appointment" : "appointments"}
           </Text>
