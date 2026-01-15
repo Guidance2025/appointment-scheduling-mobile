@@ -119,7 +119,13 @@ export default function SelfAssessmentModal({
       );
     }
 
-    return questions.map((question) => (
+    const sortedQuestions = [...questions].sort((a, b) => {
+      const dateA = new Date(a.dateCreated);
+      const dateB = new Date(b.dateCreated);
+      return dateB - dateA; 
+    });
+
+    return sortedQuestions.map((question) => (
       <TouchableOpacity
         key={question.id}
         style={styles.questionCard}

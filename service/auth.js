@@ -13,8 +13,51 @@ export async function login(username, password) {
     });
 
     if (!response.ok) {
-      const errMsg = await response.text();
-      throw new Error(errMsg || `Authentication failed (${response.status})`);
+      let errorMessage = "Authentication failed";
+      let errorData = null;
+      
+      try {
+        const contentType = response.headers.get("content-type");
+        
+        if (contentType && contentType.includes("application/json")) {
+          errorData = await response.json();
+          console.log("📦 Error data received:", errorData);
+          
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData.error) {
+            errorMessage = errorData.error;
+          } else if (errorData.reason) {
+            errorMessage = errorData.reason;
+          }
+          
+        } else {
+          const textError = await response.text();
+          console.log(" Text error received:", textError);
+          
+          try {
+            errorData = JSON.parse(textError);
+            errorMessage = errorData.message || errorData.error || errorData.reason || textError;
+          } catch {
+            errorMessage = textError || `Authentication failed (${response.status})`;
+          }
+        }
+      } catch (parseError) {
+        console.error(" Error parsing response:", parseError);
+        errorMessage = `Authentication failed (${response.status})`;
+      }
+      
+
+      const error = new Error(errorMessage);
+      error.status = response.status;
+      error.data = errorData;
+      
+      console.log(" Throwing error:", {
+        message: errorMessage,
+        status: response.status
+      });
+      
+      throw error;
     }
 
     const jwtToken = response.headers.get("Jwt-Token");
@@ -24,21 +67,26 @@ export async function login(username, password) {
 
     if (jwtToken) {
       await AsyncStorage.setItem("jwtToken", jwtToken);
+      console.log(" JWT token stored");
     } else {
-      console.warn("No JWT token received");
+      console.warn(" No JWT token received");
     }
 
-    if (!userId) throw new Error("No user ID received from server");
+    if (!userId) {
+      throw new Error("No user ID received from server");
+    }
 
     await AsyncStorage.setItem("userId", String(userId));
-    await AsyncStorage.setItem("studentId", String(studentId));
+    console.log(" User ID stored:", userId);
+    
+    if (studentId) {
+      await AsyncStorage.setItem("studentId", String(studentId));
+      console.log(" Student ID stored:", studentId);
+    }
 
-    console.log("Login successful. User ID:", userId);
     return { success: true, userId, studentId };  
 
   } catch (error) {
-    console.error("Login error:", error);
     throw error;
   }
 }
-

@@ -9,14 +9,13 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
-  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import BottomNavBar from "./layout/BottomNavBar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "../constants/api";
 import styles from "../styles/AppointmentStyles"; 
-import { formatAppointmentDateTime } from "../service/helper/dateHelper";
+import { formatAppointmentDateTime } from "../utils/dateTime";
 
 export default function Appointment({ onNavigate }) {
   const [activeScreen, setActiveScreen] = useState("appointments");
@@ -63,6 +62,7 @@ export default function Appointment({ onNavigate }) {
       setFilteredAppointments(data);
     } catch (error) {
       console.log("Fetch error:", error.message);
+      Alert.alert("Error", "Failed to load appointments");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -71,6 +71,8 @@ export default function Appointment({ onNavigate }) {
 
   const filterAppointments = () => {
     let filtered = [...appointments];
+
+    filtered = filtered.filter((apt) => apt.status !== "EXPIRED");
 
     if (statusFilter !== "ALL") {
       filtered = filtered.filter((apt) => apt.status === statusFilter);
@@ -97,13 +99,17 @@ export default function Appointment({ onNavigate }) {
   const getStatusColor = (status) => {
     switch (status) {
       case "COMPLETED":
-        return "#10B981";
+        return "#10B981"; 
       case "SCHEDULED":
-        return "#3B82F6";
+        return "#3B82F6"; 
+      case "PENDING":
+        return "#F59E0B"; 
       case "CANCELLED":
-        return "#EF4444";
+        return "#EF4444"; 
+      case "EXPIRED":
+        return "#6B7280"; 
       default:
-        return "#6B7280";
+        return "#6B7280"; 
     }
   };
 
@@ -128,7 +134,7 @@ export default function Appointment({ onNavigate }) {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}> Appointments</Text>
+          <Text style={styles.headerTitle}>Appointments</Text>
           <Text style={styles.headerSubtitle}>
             {filteredAppointments.length} {filteredAppointments.length === 1 ? "appointment" : "appointments"}
           </Text>
@@ -150,7 +156,7 @@ export default function Appointment({ onNavigate }) {
             showsHorizontalScrollIndicator={false} 
             contentContainerStyle={{ paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center' }}
           >
-            {["ALL", "SCHEDULED", "COMPLETED", "CANCELLED"].map((status) => (
+            {["ALL", "PENDING", "SCHEDULED", "COMPLETED", "CANCELLED"].map((status) => (
               <TouchableOpacity
                 key={status}
                 onPress={() => setStatusFilter(status)}
@@ -195,11 +201,13 @@ export default function Appointment({ onNavigate }) {
             </View>
           ) : (
             filteredAppointments.map((appointment) => {
-                const { date, timeRange } = formatAppointmentDateTime(
-                                appointment.scheduledDate,
-                                appointment.endDate
-                              );
               const counselorName = `${appointment.guidanceStaff?.person?.firstName || ""} ${appointment.guidanceStaff?.person?.lastName || ""}`.trim();
+              
+              const { date, timeRange } = formatAppointmentDateTime(
+                appointment.scheduledDate,
+                appointment.endDate
+              );
+
               return (
                 <View key={appointment.appointmentId} style={styles.card}>
                   <View style={styles.cardHeader}>
@@ -226,9 +234,7 @@ export default function Appointment({ onNavigate }) {
 
                     <View style={styles.infoRow}>
                       <Ionicons name="time-outline" size={16} color="#64748B" />
-                      <Text style={[styles.value, { marginLeft: 8 }]}>
-                         {timeRange}
-                      </Text>
+                      <Text style={[styles.value, { marginLeft: 8 }]}>{timeRange}</Text>
                     </View>
                   </View>
                 </View>

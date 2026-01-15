@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Modal, View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Platform, Alert, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard } from "react-native";
+import { Modal, View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Platform, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -15,92 +15,50 @@ import {
 } from "../../utils/dateTime";
 import { CustomCalendar } from "./CustomCalendar";
 
-const getInitialStartTime = () => {
-  const date = getCurrentPHTime();
-  const currentHour = date.getHours();
-  const currentMinute = date.getMinutes();
-  
-  if (currentHour < 8) {
-    date.setHours(8, 0, 0, 0);
-  } else if (currentHour >= 16) {
-    const tomorrow = new Date(date);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(8, 0, 0, 0);
-    return tomorrow;
-  } else {
-    const nextHour = currentMinute > 0 ? currentHour + 1 : currentHour;
-    date.setHours(nextHour, 0, 0, 0);
-  }
-  
-  return date;
-};
-
-const getInitialEndTime = () => {
-  const startTime = getInitialStartTime();
-  const endTime = new Date(startTime);
-  endTime.setHours(Math.min(startTime.getHours() + 1, 17), 0, 0, 0);
-  return endTime;
-};
-
-export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
-  const [appointmentType, setAppointmentType] = useState("");
-  const [guidanceStaffId, setGuidanceStaffId] = useState(null);
-  const [guidanceStaffList, setGuidanceStaffList] = useState([]);
-  const [scheduledDate, setScheduledDate] = useState(getInitialStartTime());
-  const [endDate, setEndDate] = useState(getInitialEndTime());
-  const [notes, setNotes] = useState("");
+export default function RescheduleAppointmentModal({ visible, onClose, onSuccess, appointment }) {
+  const [scheduledDate, setScheduledDate] = useState(getCurrentPHTime());
+  const [endDate, setEndDate] = useState(getCurrentPHTime());
+  const [reason, setReason] = useState("");
   const [showCalendar, setShowCalendar] = useState(false);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState("");
-  const [showAppointmentTypes, setShowAppointmentTypes] = useState(false);
-  const [showGuidanceStaff, setShowGuidanceStaff] = useState(false);
-  const [loadingStaff, setLoadingStaff] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const [fullyBlockedDates, setFullyBlockedDates] = useState([]);
   const [isLoadingBlockedDates, setIsLoadingBlockedDates] = useState(false);
   const [hasConflict, setHasConflict] = useState(false);
   const [conflictMessage, setConflictMessage] = useState("");
   const [isCheckingConflicts, setIsCheckingConflicts] = useState(false);
   const [errorFields, setErrorFields] = useState({
-    appointmentType: false,
-    counselor: false,
     date: false,
     startTime: false,
     endTime: false,
-    notes: false
+    reason: false
   });
 
-  const appointmentTypes = ["Counseling", "Academic Advising", "Career Guidance", "Personal Issue"];
-
   useEffect(() => {
-    if (visible) {
-      fetchGuidanceStaff();
-      setScheduledDate(getInitialStartTime());
-      setEndDate(getInitialEndTime());
+    if (visible && appointment) {
+      console.log("📱 Reschedule modal opened for appointment:", appointment.appointmentId);
+      
+      const currentStart = parseUTCToPH(appointment.scheduledDate);
+      const currentEnd = parseUTCToPH(appointment.endDate);
+      
+      setScheduledDate(currentStart);
+      setEndDate(currentEnd);
+      setReason("");
+      setError("");
+      clearErrorFields();
+      
+      if (appointment.guidanceStaff?.id) {
+        fetchBlockedDates(appointment.guidanceStaff.id);
+      }
     }
-  }, [visible]);
+  }, [visible, appointment]);
 
   useEffect(() => {
-    if (guidanceStaffId !== null && guidanceStaffId !== undefined) {
-      fetchBlockedDates(guidanceStaffId);
-    } else {
-      setFullyBlockedDates([]);
-    }
-  }, [guidanceStaffId]);
-
-  useEffect(() => {
-    if (guidanceStaffId && scheduledDate && endDate) {
-      checkForConflicts();
-    } else {
-      setHasConflict(false);
-      setConflictMessage("");
-    }
-  }, [guidanceStaffId, scheduledDate, endDate]);
-
-  useEffect(() => {
-    if (scheduledDate && endDate) {
+    if (visible && scheduledDate && endDate) {
       const validationError = validateDates();
       if (validationError) {
         setError(validationError);
@@ -118,7 +76,8 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
             error.includes("duration") || 
             error.includes("exceed") ||
             error.includes("blocked") ||
-            error.includes("not available")
+            error.includes("not available") ||
+            error.includes("same")
           ) {
             setError("");
             clearErrorFields();
@@ -126,7 +85,16 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
         }
       }
     }
-  }, [scheduledDate, endDate, fullyBlockedDates]);
+  }, [scheduledDate, endDate, fullyBlockedDates, visible]);
+
+  useEffect(() => {
+    if (visible && appointment && scheduledDate && endDate) {
+      checkForConflicts();
+    } else {
+      setHasConflict(false);
+      setConflictMessage("");
+    }
+  }, [scheduledDate, endDate, visible]);
 
   const checkForConflicts = async () => {
     try {
@@ -137,11 +105,11 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
       const token = await AsyncStorage.getItem("jwtToken");
       if (!token) return;
 
-      const userId = await AsyncStorage.getItem("userId");
-      if (!userId) return;
+      const studentId = await AsyncStorage.getItem("studentId");
+      if (!studentId) return;
 
       const response = await fetch(
-        `${API_BASE_URL}/student/appointments/${userId}`,
+        `${API_BASE_URL}/student/appointment/${studentId}`,
         {
           method: "GET",
           headers: {
@@ -154,7 +122,11 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
       if (response.ok) {
         const appointments = await response.json();
         
-        const conflict = appointments.find(apt => {
+        const otherAppointments = appointments.filter(apt => 
+          apt.appointmentId !== appointment.appointmentId
+        );
+        
+        const conflict = otherAppointments.find(apt => {
           if (!apt.scheduledDate || !apt.endDate || !apt.guidanceStaff) return false;
           
           const aptStartDate = parseUTCToPH(apt.scheduledDate);
@@ -163,7 +135,7 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
           if (!aptStartDate || !aptEndDate) return false;
           
           const aptStaffId = apt.guidanceStaff.id || apt.guidanceStaff.employeeNumber;
-          const selectedStaffId = guidanceStaffId;
+          const selectedStaffId = appointment.guidanceStaff?.id || appointment.guidanceStaff?.employeeNumber;
           
           const isActiveStatus = apt.status === 'PENDING' || apt.status === 'SCHEDULED';
           
@@ -183,6 +155,8 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
           const selectedEnd = endDate.getTime();
           const aptStart = aptStartDate.getTime();
           const aptEnd = aptEndDate.getTime();
+          
+         
           const hasTimeOverlap = (selectedStart < aptEnd) && (selectedEnd > aptStart);
           
           if (hasTimeOverlap) {
@@ -198,7 +172,8 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
           const conflictEndDate = parseUTCToPH(conflict.endDate);
           
           const conflictStaffId = conflict.guidanceStaff.id || conflict.guidanceStaff.employeeNumber;
-          const isSameCounselor = conflictStaffId === guidanceStaffId;
+          const selectedStaffId = appointment.guidanceStaff?.id || appointment.guidanceStaff?.employeeNumber;
+          const isSameCounselor = conflictStaffId === selectedStaffId;
           
           const conflictDateStr = `${conflictStartDate.getFullYear()}-${String(conflictStartDate.getMonth() + 1).padStart(2, '0')}-${String(conflictStartDate.getDate()).padStart(2, '0')}`;
           const selectedDateStr = `${scheduledDate.getFullYear()}-${String(scheduledDate.getMonth() + 1).padStart(2, '0')}-${String(scheduledDate.getDate()).padStart(2, '0')}`;
@@ -207,8 +182,8 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
           let message = "";
           
           if (isSameCounselor && isSameDate) {
-            message = `You already have an appointment with this counselor on ${formatDatePH(conflictStartDate)}. Please choose a different date or counselor.`;
-            setErrorFields(prev => ({ ...prev, counselor: true, date: true }));
+            message = `You already have an appointment with this counselor on ${formatDatePH(conflictStartDate)}. Please choose a different date.`;
+            setErrorFields(prev => ({ ...prev, date: true }));
           } else {
             const conflictCounselorName = conflict.guidanceStaff.person 
               ? `${conflict.guidanceStaff.person.firstName} ${conflict.guidanceStaff.person.lastName}`
@@ -228,64 +203,9 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
         }
       }
     } catch (err) {
-      console.error("Error checking conflicts:", err);
+      console.error(" Error checking conflicts:", err);
     } finally {
       setIsCheckingConflicts(false);
-    }
-  };
-
-  const fetchGuidanceStaff = async () => {
-    try {
-      setLoadingStaff(true);
-      setError("");
-      
-      const token = await AsyncStorage.getItem("jwtToken");
-      if (!token) { 
-        setError("Authentication token not found. Please log in again."); 
-        return; 
-      }
-
-      const response = await fetch(`${API_BASE_URL}/counselor/all`, {
-        method: "GET",
-        headers: { 
-          "Content-Type": "application/json", 
-          Authorization: `Bearer ${token}` 
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        
-        if (response.status === 401) {
-          setError("Session expired. Please log in again.");
-        } else if (response.status === 403) {
-          setError("Access denied. You don't have permission to view counselors.");
-        } else if (response.status >= 500) {
-          setError("Server error. Please try again later.");
-        } else {
-          setError("Failed to load guidance staff. Please try again.");
-        }
-        return;
-      }
-      
-      const data = await response.json();
-      
-      if (!Array.isArray(data) || data.length === 0) {
-        setError("No counselors available at the moment.");
-        return;
-      }
-      
-      setGuidanceStaffList(data);
-    } catch (err) {
-      if (err.message.includes("Network request failed")) {
-        setError("Network error. Please check your internet connection.");
-      } else if (err.message.includes("timeout")) {
-        setError("Request timeout. Please try again.");
-      } else {
-        setError("Failed to load guidance staff. Please try again.");
-      }
-    } finally {
-      setLoadingStaff(false);
     }
   };
 
@@ -293,6 +213,7 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
     try {
       setIsLoadingBlockedDates(true);
       setFullyBlockedDates([]);
+      setError("");
       
       const token = await AsyncStorage.getItem("jwtToken");
       
@@ -306,11 +227,13 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
         : selectedStaffId;
 
       if (!staffIdNumber || isNaN(staffIdNumber)) {
+        console.error("❌ Invalid staff ID:", selectedStaffId);
         setError("Invalid counselor selected. Please try again.");
         return;
       }
 
       const url = `${API_BASE_URL}/counselor/availability/blocks/${staffIdNumber}`;
+      console.log("📡 Fetching from:", url);
 
       const response = await fetch(url, {
         method: "GET",
@@ -320,8 +243,11 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
         },
       });
 
+      console.log("📡 Response status:", response.status);
+
       if (!response.ok) {
         const errorText = await response.text();
+        console.error("❌ Failed to fetch blocked dates:", errorText);
         
         if (response.status === 401) {
           setError("Session expired. Please log in again.");
@@ -331,13 +257,18 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
           setError("Counselor not found. Please select a different counselor.");
         } else if (response.status >= 500) {
           setError("Server error while loading availability. Please try again later.");
+        } else {
+          setError("Failed to load counselor's availability. Please try again.");
         }
         return;
       }
 
       const blocks = await response.json();
+      console.log("✅ Total blocks fetched:", blocks.length);
       
       if (!Array.isArray(blocks)) {
+        console.error("❌ Invalid response format:", blocks);
+        setError("Invalid data received. Please try again.");
         return;
       }
       
@@ -350,11 +281,15 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
         .map(block => {
           const dateStr = block.scheduledDate;
           
-          if (!dateStr) return null;
+          if (!dateStr) {
+            return null;
+          }
           
           try {
             const phDate = parseUTCToPH(dateStr);
-            if (!phDate) return null;
+            if (!phDate) {
+              return null;
+            }
             
             const year = phDate.getFullYear();
             const month = String(phDate.getMonth() + 1).padStart(2, '0');
@@ -363,17 +298,23 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
             
             return formatted;
           } catch (parseError) {
+            console.error("❌ Error parsing date:", parseError);
             return null;
           }
         })
         .filter(date => date !== null);
 
       setFullyBlockedDates(fullyBlocked);
+      
     } catch (err) {
+      console.error("❌ Error fetching blocked dates:", err);
+      
       if (err.message.includes("Network request failed")) {
         setError("Network error. Please check your internet connection.");
       } else if (err.message.includes("timeout")) {
         setError("Request timeout. Please try again.");
+      } else {
+        setError("Failed to load counselor's availability. Continuing with default availability.");
       }
       
       setFullyBlockedDates([]);
@@ -404,10 +345,10 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
       
       const schedEnd = new Date(endDate);
       schedEnd.setSeconds(0, 0);
-      
+
       const nowDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const schedDateOnly = new Date(scheduledDate.getFullYear(), scheduledDate.getMonth(), scheduledDate.getDate());
-      
+
       if (isDateBlocked(scheduledDate)) {
         setErrorFields(prev => ({ ...prev, date: true }));
         return "This date is blocked by the counselor and not available for appointments";
@@ -424,17 +365,27 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
           return "Appointment time has already passed. Please select a future time.";
         }
       }
-
+      
+      if (schedEnd.getTime() === schedStart.getTime()) {
+        setErrorFields(prev => ({ ...prev, startTime: true, endTime: true }));
+        return "Start time and end time cannot be the same";
+      }
+      
       if (schedEnd <= schedStart) {
         setErrorFields(prev => ({ ...prev, startTime: true, endTime: true }));
         return "End time must be after start time";
       }
 
+      const durationMinutes = (schedEnd - schedStart) / (1000 * 60);
+      if (durationMinutes > 60) {
+        setErrorFields(prev => ({ ...prev, startTime: true, endTime: true }));
+        return "Appointment duration cannot exceed 1 hour";
+      }
+
       const startHour = scheduledDate.getHours();
-      const startMinute = scheduledDate.getMinutes();
       const endHour = endDate.getHours();
       const endMinute = endDate.getMinutes();
-      
+
       if (startHour < 8) {
         setErrorFields(prev => ({ ...prev, startTime: true }));
         return "Appointments cannot start before 8:00 AM";
@@ -457,33 +408,26 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
 
       return "";
     } catch (err) {
+      console.error("❌ Error validating dates:", err);
       return "Error validating dates. Please check your input.";
     }
   };
 
   const updateErrorFields = (errorMessage) => {
     const newErrorFields = {
-      appointmentType: false,
-      counselor: false,
       date: false,
       startTime: false,
       endTime: false,
-      notes: false
+      reason: false
     };
 
-    if (errorMessage.includes("appointment type")) {
-      newErrorFields.appointmentType = true;
-    }
-    if (errorMessage.includes("counselor") || errorMessage.includes("Counselor")) {
-      newErrorFields.counselor = true;
-    }
-    if (errorMessage.includes("date") || errorMessage.includes("weekend") || errorMessage.includes("blocked") || errorMessage.includes("past")) {
+    if (errorMessage.includes("date") || errorMessage.includes("weekend") || errorMessage.includes("blocked") || errorMessage.includes("past") || errorMessage.includes("available")) {
       newErrorFields.date = true;
     }
-    if (errorMessage.includes("start") || errorMessage.includes("Start") || errorMessage.includes("8:00 AM") || errorMessage.includes("after")) {
+    if (errorMessage.includes("start") || errorMessage.includes("Start") || errorMessage.includes("8:00 AM") || errorMessage.includes("same")) {
       newErrorFields.startTime = true;
     }
-    if (errorMessage.includes("end") || errorMessage.includes("End") || errorMessage.includes("5:00 PM") || errorMessage.includes("after")) {
+    if (errorMessage.includes("end") || errorMessage.includes("End") || errorMessage.includes("5:00 PM") || errorMessage.includes("after") || errorMessage.includes("duration") || errorMessage.includes("exceed") || errorMessage.includes("same")) {
       newErrorFields.endTime = true;
     }
 
@@ -492,61 +436,47 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
 
   const clearErrorFields = () => {
     setErrorFields({
-      appointmentType: false,
-      counselor: false,
       date: false,
       startTime: false,
       endTime: false,
-      notes: false
+      reason: false
     });
   };
 
   const handleSubmit = async () => {
-    if (!appointmentType) { 
-      setError("Please select an appointment type");
-      setErrorFields(prev => ({ ...prev, appointmentType: true }));
-      return; 
-    }
-    if (!guidanceStaffId) { 
-      setError("Please select a counselor");
-      setErrorFields(prev => ({ ...prev, counselor: true }));
-      return; 
-    }
-
-    const validationError = validateDates();
-    if (validationError) { 
-      setError(validationError);
-      updateErrorFields(validationError);
-      return; 
-    }
-
-    if (hasConflict) {
-      return;
-    }
-
-    setIsProcessing(true);
     setError("");
-    clearErrorFields();
     
     try {
+      const validationError = validateDates();
+      if (validationError) { 
+        setError(validationError);
+        updateErrorFields(validationError);
+        return; 
+      }
+
+      if (hasConflict) {
+        return;
+      }
+
+      setIsProcessing(true);
+      clearErrorFields();
+      
       const token = await AsyncStorage.getItem("jwtToken");
       if (!token) { 
         setError("Authentication token not found. Please log in again."); 
         return; 
       }
 
-      const scheduledUTC = convertLocalToUTCISO(scheduledDate);
-      const endUTC = convertLocalToUTCISO(endDate);
-
       const requestData = {
-        guidanceStaff: { id: guidanceStaffId },
-        scheduledDate: scheduledUTC,
-        endDate: endUTC,
-        appointmentType,
-        notes: notes.trim(),
+        appointmentId: appointment.appointmentId,
+        newScheduledDate: convertLocalToUTCISO(scheduledDate),
+        newEndDate: convertLocalToUTCISO(endDate),
+        reason: reason.trim(),
       };
 
-      const response = await fetch(`${API_BASE_URL}/student/create-appointment`, {
+      console.log("📤 Sending reschedule request:", requestData);
+
+      const response = await fetch(`${API_BASE_URL}/student/reschedule`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json", 
@@ -556,6 +486,7 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
       });
 
       const responseText = await response.text();
+      console.log("📥 Response:", response.status, responseText);
 
       if (!response.ok) {
         if (response.status === 401) {
@@ -564,54 +495,63 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
         }
         
         if (response.status === 403) {
-          setError("Access denied. You don't have permission to create appointments.");
+          setError("Access denied. You don't have permission to reschedule this appointment.");
           return;
         }
         
         if (response.status === 400) {
-          if (responseText.includes("STUDENT ALREADY HAS AN APPOINTMENT")) {
-            setError("You already have a pending or scheduled appointment");
+          if (responseText.toLowerCase().includes("already been rescheduled")) {
+            setError("This appointment has already been rescheduled once. No further reschedules are allowed.");
             return;
           }
-          if (responseText.includes("YOU HAVE REACHED THE MAXIMUM LIMIT")) {
-            setError("You have reached the maximum limit of appointments.");
+          if (responseText.toLowerCase().includes("already passed") || 
+              responseText.toLowerCase().includes("past")) {
+            setError("Cannot reschedule an appointment that has already passed.");
+            setErrorFields(prev => ({ ...prev, date: true }));
             return;
           }
-          if (responseText.toLowerCase().includes("you already have an appointment with this counselor on this day")) {
-            setError("You already have an appointment with this counselor on this day. Please choose a different date or counselor.");
+          if (responseText.toLowerCase().includes("blocked") || 
+              responseText.toLowerCase().includes("unavailable")) {
+            setError("This time slot is blocked. Please choose a different time.");
+            setErrorFields(prev => ({ ...prev, date: true, startTime: true, endTime: true }));
             return;
           }
-          if (responseText.toLowerCase().includes("guidance staff has an appointment")) {
+          if (responseText.toLowerCase().includes("counselor") && 
+              responseText.toLowerCase().includes("appointment")) {
             setError("This counselor already has an appointment at this time. Please choose a different time.");
+            setErrorFields(prev => ({ ...prev, startTime: true, endTime: true }));
             return;
           }
-          if (responseText.toLowerCase().includes("time slot")) {
-            setError("This time slot is not available. Please choose a different time.");
+          if (responseText.toLowerCase().includes("already have") || 
+              responseText.toLowerCase().includes("conflict")) {
+            setError("You have a conflicting appointment at this time. Please choose a different time.");
+            setErrorFields(prev => ({ ...prev, date: true, startTime: true, endTime: true }));
             return;
           }
-          if (responseText.toLowerCase().includes("invalid")) {
-            setError("Invalid appointment details. Please check your input.");
+          if (responseText.toLowerCase().includes("same time") ||
+              responseText.toLowerCase().includes("same as current")) {
+            setError("Please select a different time from the current appointment.");
+            setErrorFields(prev => ({ ...prev, startTime: true, endTime: true }));
             return;
-          } 
-          setError(responseText || "Invalid appointment details. Please check your input.");
+          }
+          if (responseText.toLowerCase().includes("buffer")) {
+            setError("You have another appointment too close to this time (10-minute buffer required).");
+            setErrorFields(prev => ({ ...prev, startTime: true, endTime: true }));
+            return;
+          }
+          
+          setError(responseText || "Invalid reschedule request. Please check your input.");
           return;
         }
         
         if (response.status === 404) {
-          setError("Counselor not found. Please select a different counselor.");
+          setError("Appointment not found. It may have been cancelled or deleted.");
           return;
         }
         
         if (response.status === 409) {
-          if (responseText.includes("YOU ALREADY HAVE AN APPOINTMENT WITH THIS COUNSELOR")) {
-            setError("You already have an appointment with this counselor on this day. Please choose a different date or counselor.");
-            return;
-          }
-          if (responseText.toLowerCase().includes("time conflict") || responseText.toLowerCase().includes("overlapping")) {
-            setError("Time conflict detected. Please choose a different time.");
-            return;
-          }
-          setError("Scheduling conflict. Please choose a different time or date.");
+          setError("Time conflict detected. Please choose a different time.");
+          setErrorFields(prev => ({ ...prev, date: true, startTime: true, endTime: true }));
           return;
         }
         
@@ -620,13 +560,25 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
           return;
         }
         
-        setError(responseText || "Failed to create appointment. Please try again.");
+        setError(responseText || "Failed to reschedule appointment. Please try again.");
         return;
       }
 
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("❌ Failed to parse response:", parseError);
+        setError("Invalid server response. Please try again.");
+        return;
+      }
+      
+      setSuccessMessage("Reschedule request sent! Waiting for counselor approval.");
       setShowSuccess(true);
       
     } catch (err) {
+      console.error("❌ Error rescheduling appointment:", err);
+      
       if (err.message.includes("Network request failed")) {
         setError("Network error. Please check your internet connection.");
       } else if (err.message.includes("timeout")) {
@@ -634,7 +586,7 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
       } else if (err.message.includes("JSON")) {
         setError("Invalid server response. Please try again.");
       } else {
-        setError(err.message || "Failed to create appointment. Please try again.");
+        setError(err.message || "Failed to reschedule appointment. Please try again.");
       }
     } finally {
       setIsProcessing(false);
@@ -649,42 +601,23 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
   };
 
   const resetForm = () => {
-    setAppointmentType("");
-    setGuidanceStaffId(null);
-    setScheduledDate(getInitialStartTime());
-    setEndDate(getInitialEndTime());
-    setNotes("");
+    setScheduledDate(getCurrentPHTime());
+    setEndDate(getCurrentPHTime());
+    setReason("");
     setError("");
-    setShowAppointmentTypes(false);
-    setShowGuidanceStaff(false);
     setFullyBlockedDates([]);
     setHasConflict(false);
     setConflictMessage("");
     clearErrorFields();
   };
 
-  const handleCounselorSelect = (staff) => {
-    try {
-      const staffId = staff.id || staff.employeeNumber;
-      
-      if (!staffId) {
-        setError("Invalid counselor data. Please try again.");
-        return;
-      }
-      
-      setGuidanceStaffId(staffId);
-      setShowGuidanceStaff(false);
-      setError("");
-      setErrorFields(prev => ({ ...prev, counselor: false }));
-    } catch (err) {
-      setError("Error selecting counselor. Please try again.");
-    }
-  };
-
   const handleDateSelect = (selectedDate) => {
     try {
+      console.log("📅 Date selected:", selectedDate);
+      
       if (isDateBlocked(selectedDate)) {
-        setError("This date is blocked by the counselor and not available for appointments");
+        setError("This date is not available. Please select another date.");
+        setErrorFields(prev => ({ ...prev, date: true }));
         return;
       }
       
@@ -699,7 +632,8 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
         const currentMinute = now.getMinutes();
         
         if (currentHour >= 16) {
-          setError("Too late to book appointments today. Please select a future date.");
+          setError("Too late to reschedule for today. Please select a future date.");
+          setErrorFields(prev => ({ ...prev, date: true }));
           return;
         }
         
@@ -710,15 +644,29 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
         newStartTime.setHours(startHour, 0, 0, 0);
       } else {
         newStartTime = new Date(selectedDate);
-        newStartTime.setHours(8, 0, 0, 0);
+        newStartTime.setHours(scheduledDate.getHours(), scheduledDate.getMinutes(), 0, 0);
       }
       
       setScheduledDate(newStartTime);
 
-      const newEndTime = new Date(newStartTime);
-      newEndTime.setHours(Math.min(newStartTime.getHours() + 1, 17), 0, 0, 0);
-      setEndDate(newEndTime);
+      const newEnd = new Date(newStartTime);
+      const newEndHour = newStartTime.getHours() + 1;
       
+      if (newEndHour > 17) {
+        newEnd.setHours(17, 0, 0, 0);
+      } else {
+        newEnd.setHours(newEndHour, newStartTime.getMinutes(), 0, 0);
+      }
+      
+      if (newEnd <= newStartTime) {
+        newEnd.setTime(newStartTime.getTime() + 15 * 60 * 1000); 
+        
+        if (newEnd.getHours() > 17 || (newEnd.getHours() === 17 && newEnd.getMinutes() > 0)) {
+          newEnd.setHours(17, 0, 0, 0);
+        }
+      }
+      
+      setEndDate(newEnd);
       setShowCalendar(false);
       
       setErrorFields(prev => ({ ...prev, date: false }));
@@ -727,6 +675,7 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
         setError("");
       }
     } catch (err) {
+      console.error(" Error selecting date:", err);
       setError("Error selecting date. Please try again.");
     }
   };
@@ -741,11 +690,27 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
       setScheduledDate(newDate);
 
       const newEnd = new Date(newDate);
-      newEnd.setHours(Math.min(newDate.getHours() + 1, 17), 0, 0, 0);
+      const newEndHour = newDate.getHours() + 1;
+      
+      if (newEndHour > 17) {
+        newEnd.setHours(17, 0, 0, 0);
+      } else {
+        newEnd.setHours(newEndHour, newDate.getMinutes(), 0, 0);
+      }
+      
+      if (newEnd <= newDate) {
+        newEnd.setTime(newDate.getTime() + 15 * 60 * 1000); 
+        
+        if (newEnd.getHours() > 17 || (newEnd.getHours() === 17 && newEnd.getMinutes() > 0)) {
+          newEnd.setHours(17, 0, 0, 0);
+        }
+      }
+      
       setEndDate(newEnd);
       
       setErrorFields(prev => ({ ...prev, startTime: false }));
     } catch (err) {
+      console.error("❌ Error setting start time:", err);
       setError("Error setting start time. Please try again.");
     }
   };
@@ -757,36 +722,36 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
     try {
       const newDate = new Date(endDate);
       newDate.setHours(selectedTime.getHours(), selectedTime.getMinutes());
+      
       if (newDate > scheduledDate) {
         setEndDate(newDate);
+        setErrorFields(prev => ({ ...prev, endTime: false }));
+      } else {
+        setError("End time must be after start time");
+        setErrorFields(prev => ({ ...prev, endTime: true }));
       }
-      
-      setErrorFields(prev => ({ ...prev, endTime: false }));
     } catch (err) {
+      console.error("❌ Error setting end time:", err);
       setError("Error setting end time. Please try again.");
     }
   };
 
-  const getSelectedStaffName = () => {
-    try {
-      const staff = guidanceStaffList.find(s => s.id === guidanceStaffId || s.employeeNumber === guidanceStaffId);
-      return staff?.person 
-        ? `${staff.person.firstName} ${staff.person.lastName}` 
-        : "Select Counselor";
-    } catch (err) {
-      return "Select Counselor";
-    }
-  };
-
-  const isFormValid = appointmentType && 
-                      guidanceStaffId && 
-                      !error && 
+  const isFormValid = !error && 
                       !isLoadingBlockedDates && 
                       !hasConflict &&
                       !isCheckingConflicts;
 
   const today = getCurrentPHTime();
   const endOfNextMonth = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+
+  if (!appointment) return null;
+
+  const currentStartPH = parseUTCToPH(appointment.scheduledDate);
+  const currentEndPH = parseUTCToPH(appointment.endDate);
+
+  const isSameAsOriginal =
+    scheduledDate.getTime() === currentStartPH.getTime() &&
+    endDate.getTime() === currentEndPH.getTime();
 
   return (
     <>
@@ -799,7 +764,7 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Book Appointment</Text>
+                  <Text style={styles.modalTitle}>Reschedule Appointment</Text>
                   <TouchableOpacity onPress={() => { resetForm(); onClose(); }}>
                     <Ionicons name="close" size={28} color="#6B7280" />
                   </TouchableOpacity>
@@ -810,98 +775,33 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
                   showsVerticalScrollIndicator={false}
                   keyboardShouldPersistTaps="handled"
                 >
+                  {/* ✅ Current Appointment Info */}
+                  <View style={styles.currentAppointmentCard}>
+                    <Text style={styles.currentAppointmentTitle}>
+                      Current Appointment Details
+                    </Text>
+                    <View style={styles.currentAppointmentRow}>
+                      <Ionicons name="calendar" size={16} color="#3B82F6" />
+                      <Text style={styles.currentAppointmentLabel}>Date:</Text>
+                      <Text style={styles.currentAppointmentValue}>
+                        {formatDatePH(currentStartPH)}
+                      </Text>
+                    </View>
+                    <View style={styles.currentAppointmentRow}>
+                      <Ionicons name="time" size={16} color="#3B82F6" />
+                      <Text style={styles.currentAppointmentLabel}>Time:</Text>
+                      <Text style={styles.currentAppointmentValue}>
+                        {formatTimePH(currentStartPH)} - {formatTimePH(currentEndPH)}
+                      </Text>
+                    </View>
+                  </View>
+
                   {error && (
                     <View style={styles.errorContainer}>
                       <Ionicons name="alert-circle" size={20} color="#DC2626" />
                       <Text style={styles.errorText}>{error}</Text>
                     </View>
                   )}
-
-                  <View style={styles.fieldContainer}>
-                    <Text style={styles.label}>Appointment Type <Text style={styles.required}>*</Text></Text>
-                    <TouchableOpacity 
-                      style={[
-                        styles.selectInput,
-                        errorFields.appointmentType && styles.inputError
-                      ]} 
-                      onPress={() => setShowAppointmentTypes(!showAppointmentTypes)} 
-                      disabled={isProcessing}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={appointmentType ? styles.selectText : styles.selectPlaceholder}>
-                        {appointmentType || "Select Appointment Type"}
-                      </Text>
-                      <Ionicons name="chevron-down" size={20} color="#9CA3AF" />
-                    </TouchableOpacity>
-                    {showAppointmentTypes && (
-                      <View style={styles.dropdown}>
-                        {appointmentTypes.map(type => (
-                          <TouchableOpacity 
-                            key={type} 
-                            style={styles.dropdownItem} 
-                            onPress={() => { 
-                              setAppointmentType(type); 
-                              setShowAppointmentTypes(false); 
-                              if (error === "Please select an appointment type") setError("");
-                              setErrorFields(prev => ({ ...prev, appointmentType: false }));
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={styles.dropdownItemText}>{type}</Text>
-                            {appointmentType === type && (
-                              <Ionicons name="checkmark" size={20} color="#48BB78" />
-                            )}
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    )}
-                  </View>
-
-                  <View style={styles.fieldContainer}>
-                    <Text style={styles.label}>Counselor <Text style={styles.required}>*</Text></Text>
-                    <TouchableOpacity 
-                      style={[
-                        styles.selectInput,
-                        errorFields.counselor && styles.inputError
-                      ]} 
-                      onPress={() => setShowGuidanceStaff(!showGuidanceStaff)} 
-                      disabled={isProcessing || loadingStaff}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={guidanceStaffId ? styles.selectText : styles.selectPlaceholder}>
-                        {loadingStaff ? "Loading..." : getSelectedStaffName()}
-                      </Text>
-                      <Ionicons name="chevron-down" size={20} color="#9CA3AF" />
-                    </TouchableOpacity>
-                    {showGuidanceStaff && (
-                      <ScrollView style={styles.dropdown} nestedScrollEnabled>
-                        {guidanceStaffList.length > 0 ? (
-                          guidanceStaffList.map(staff => {
-                            const staffId = staff.id || staff.employeeNumber;
-                            return (
-                              <TouchableOpacity 
-                                key={staffId} 
-                                style={styles.dropdownItem} 
-                                onPress={() => handleCounselorSelect(staff)}
-                                activeOpacity={0.7}
-                              >
-                                <Text style={styles.dropdownItemText}>
-                                  {staff.person?.firstName} {staff.person?.lastName}
-                                </Text>
-                                {guidanceStaffId === staffId && (
-                                  <Ionicons name="checkmark" size={20} color="#48BB78" />
-                                )}
-                              </TouchableOpacity>
-                            );
-                          })
-                        ) : (
-                          <View style={styles.dropdownItem}>
-                            <Text style={styles.dropdownItemText}>No counselors available</Text>
-                          </View>
-                        )}
-                      </ScrollView>
-                    )}
-                  </View>
 
                   {isLoadingBlockedDates && (
                     <View style={styles.hintContainer}>
@@ -910,7 +810,7 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
                     </View>
                   )}
 
-                  {guidanceStaffId && !isLoadingBlockedDates && (
+                  {!isLoadingBlockedDates && (
                     <View style={[styles.hintContainer, styles.hintContainerSuccess]}>
                       <Ionicons name="checkmark-circle" size={18} color="#16A34A" />
                       <Text style={[styles.hintText, styles.hintTextSuccess]}>
@@ -928,6 +828,7 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
                     </View>
                   )}
 
+                  {/* ✅ Conflict Warning */}
                   {hasConflict && (
                     <View style={styles.warningContainer}>
                       <Ionicons name="warning" size={20} color="#D97706" />
@@ -936,14 +837,16 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
                   )}
 
                   <View style={styles.fieldContainer}>
-                    <Text style={styles.label}>Appointment Date <Text style={styles.required}>*</Text></Text>
+                    <Text style={styles.label}>
+                      New Appointment Date <Text style={styles.required}>*</Text>
+                    </Text>
                     <TouchableOpacity 
                       style={[
                         styles.dateTimeInput,
                         errorFields.date && styles.inputError
                       ]} 
                       onPress={() => setShowCalendar(true)} 
-                      disabled={isProcessing || isLoadingBlockedDates || !guidanceStaffId}
+                      disabled={isProcessing || isLoadingBlockedDates}
                       activeOpacity={0.7}
                     >
                       <Ionicons name="calendar-outline" size={22} color="#10B981" />
@@ -952,16 +855,14 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
                     </TouchableOpacity>
                     <View style={styles.hintContainer}>
                       <Ionicons name="information-circle-outline" size={16} color="#D97706" />
-                      <Text style={styles.hintText}>
-                        {!guidanceStaffId 
-                          ? "Please select a counselor first" 
-                          : "Weekends and blocked dates are not available"}
-                      </Text>
+                      <Text style={styles.hintText}>Weekends and blocked dates are not available</Text>
                     </View>
                   </View>
 
                   <View style={styles.fieldContainer}>
-                    <Text style={styles.label}>Start Time <Text style={styles.required}>*</Text></Text>
+                    <Text style={styles.label}>
+                      New Start Time <Text style={styles.required}>*</Text>
+                    </Text>
                     <TouchableOpacity 
                       style={[
                         styles.dateTimeInput,
@@ -978,7 +879,9 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
                   </View>
 
                   <View style={styles.fieldContainer}>
-                    <Text style={styles.label}>End Time <Text style={styles.required}>*</Text></Text>
+                    <Text style={styles.label}>
+                      New End Time <Text style={styles.required}>*</Text>
+                    </Text>
                     <TouchableOpacity 
                       style={[
                         styles.dateTimeInput,
@@ -995,15 +898,18 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
                   </View>
 
                   <View style={styles.fieldContainer}>
-                    <Text style={styles.label}>Notes (Optional)</Text>
+                    <Text style={styles.label}>Reason for Reschedule (Optional)</Text>
                     <TextInput 
-                      style={styles.textArea} 
-                      value={notes} 
-                      onChangeText={(text) => {
-                        setNotes(text);
-                        setErrorFields(prev => ({ ...prev, notes: false }));
+                      style={[
+                        styles.textArea,
+                        errorFields.reason && styles.inputError
+                      ]} 
+                      value={reason} 
+                      onChangeText={(text) => { 
+                        setReason(text);
+                        setErrorFields(prev => ({ ...prev, reason: false }));
                       }} 
-                      placeholder="Additional notes or concerns..." 
+                      placeholder="Why do you need to reschedule?" 
                       placeholderTextColor="#9CA3AF"
                       multiline 
                       numberOfLines={4} 
@@ -1013,22 +919,29 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
                       blurOnSubmit={true}
                       onSubmitEditing={Keyboard.dismiss}
                     />
-                    <Text style={styles.charCount}>{notes.length}/500</Text>
+                    <Text style={styles.charCount}>{reason.length}/500</Text>
+                  </View>
+
+                  <View style={styles.infoBox}>
+                    <Ionicons name="information-circle" size={20} color="#D97706" />
+                    <Text style={styles.infoBoxText}>
+                      All reschedule requests require counselor approval
+                    </Text>
                   </View>
 
                   <TouchableOpacity 
                     style={[
                       styles.submitButton, 
-                      (!isFormValid || isProcessing) && styles.submitButtonDisabled
+                      (!isFormValid || isProcessing || isLoadingBlockedDates || isSameAsOriginal) && styles.submitButtonDisabled
                     ]} 
                     onPress={handleSubmit} 
-                    disabled={!isFormValid || isProcessing}
+                    disabled={!isFormValid || isProcessing || isLoadingBlockedDates || isSameAsOriginal}
                     activeOpacity={0.8}
                   >
                     {isProcessing ? (
                       <ActivityIndicator color="#fff" size="small" />
                     ) : (
-                      <Text style={styles.submitButtonText}>Set Appointment</Text>
+                      <Text style={styles.submitButtonText}>Request Reschedule</Text>
                     )}
                   </TouchableOpacity>
                 </ScrollView>
@@ -1071,7 +984,7 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
       <SuccessMessage 
         visible={showSuccess} 
         title="Success" 
-        message="Appointment request sent successfully! Please wait for counselor confirmation." 
+        message={successMessage}
         onClose={handleSuccessClose} 
       />
     </>

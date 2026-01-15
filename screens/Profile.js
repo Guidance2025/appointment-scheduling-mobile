@@ -29,8 +29,15 @@ export default function Profile({ onNavigate }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   
   const [editForm, setEditForm] = useState({
+    email: "",
+    contactNumber: "",
+    address: ""
+  });
+
+  const [originalForm, setOriginalForm] = useState({
     email: "",
     contactNumber: "",
     address: ""
@@ -42,13 +49,35 @@ export default function Profile({ onNavigate }) {
 
   useEffect(() => {
     if (profileData?.person) {
-      setEditForm({
+      const formData = {
         email: profileData.person.email || "",
         contactNumber: profileData.person.contactNumber || "",
         address: profileData.person.address || ""
-      });
+      };
+      setEditForm(formData);
+      setOriginalForm(formData);
     }
   }, [profileData]);
+
+  const hasChanges = () => {
+    return editForm.email.trim() !== originalForm.email.trim() || 
+           editForm.contactNumber.trim() !== originalForm.contactNumber.trim() ||
+           editForm.address.trim() !== originalForm.address.trim();
+  };
+
+  const getChangedFields = () => {
+    const changes = [];
+    if (editForm.email.trim() !== originalForm.email.trim()) {
+      changes.push('email');
+    }
+    if (editForm.contactNumber.trim() !== originalForm.contactNumber.trim()) {
+      changes.push('phone number');
+    }
+    if (editForm.address.trim() !== originalForm.address.trim()) {
+      changes.push('address');
+    }
+    return changes;
+  };
 
   const getProfile = async () => {
     try {
@@ -97,18 +126,9 @@ export default function Profile({ onNavigate }) {
 
   const handleSaveProfile = async () => {
     try {
+      // Validate email
       if (!editForm.email.trim()) {
         Alert.alert('Validation Error', 'Email address is required.');
-        return;
-      }
-
-      if (!editForm.contactNumber.trim()) {
-        Alert.alert('Validation Error', 'Phone number is required.');
-        return;
-      }
-
-      if (!editForm.address.trim()) {
-        Alert.alert('Validation Error', 'Address is required.');
         return;
       }
 
@@ -118,9 +138,21 @@ export default function Profile({ onNavigate }) {
         return;
       }
 
+      // Validate phone number
+      if (!editForm.contactNumber.trim()) {
+        Alert.alert('Validation Error', 'Phone number is required.');
+        return;
+      }
+
       const phoneRegex = /\d{10,}/;
       if (!phoneRegex.test(editForm.contactNumber.trim().replace(/\D/g, ''))) {
         Alert.alert('Validation Error', 'Please enter a valid phone number (at least 10 digits).');
+        return;
+      }
+
+      // Validate address
+      if (!editForm.address.trim()) {
+        Alert.alert('Validation Error', 'Address is required.');
         return;
       }
 
@@ -131,10 +163,36 @@ export default function Profile({ onNavigate }) {
         throw new Error("Student ID not found");
       }
 
+      // Get changed fields before saving
+      const changedFields = getChangedFields();
+
       const updatedStudent = await updateStudentProfile(studentId, editForm);
       
       setProfileData(updatedStudent);
+      
+      // Update original form to new values
+      const newFormData = {
+        email: updatedStudent.person.email,
+        contactNumber: updatedStudent.person.contactNumber,
+        address: updatedStudent.person.address
+      };
+      setOriginalForm(newFormData);
+      setEditForm(newFormData);
+      
       setIsEditing(false);
+      
+      // Create dynamic success message
+      let message = "Profile Updated Successfully!";
+      if (changedFields.length > 0) {
+        const fieldsText = changedFields.length === 1 
+          ? changedFields[0] 
+          : changedFields.length === 2
+          ? changedFields.join(' and ')
+          : changedFields.slice(0, -1).join(', ') + ', and ' + changedFields[changedFields.length - 1];
+        message = `Your ${fieldsText} has been updated.`;
+      }
+      
+      setSuccessMessage(message);
       setShowSuccess(true);
       Keyboard.dismiss();
       
@@ -149,6 +207,15 @@ export default function Profile({ onNavigate }) {
         Alert.alert(
           'Error',
           'This email address is already in use. Please use a different email.',
+          [{ text: 'OK' }]
+        );
+      } else if (err.message && (
+          err.message.includes('PHONE') || 
+          err.message.includes('CONTACT')
+      )) {
+        Alert.alert(
+          'Error',
+          'This phone number is already in use. Please use a different number.',
           [{ text: 'OK' }]
         );
       } else {
@@ -166,9 +233,9 @@ export default function Profile({ onNavigate }) {
   const handleCancelEdit = () => {
     if (profileData?.person) {
       setEditForm({
-        email: profileData.person.email || "",
-        contactNumber: profileData.person.contactNumber || "",
-        address: profileData.person.address || ""
+        email: originalForm.email,
+        contactNumber: originalForm.contactNumber,
+        address: originalForm.address
       });
     }
     setIsEditing(false);
@@ -342,9 +409,9 @@ export default function Profile({ onNavigate }) {
               {isEditing ? (
                 <View style={styles.buttonRow}>
                   <TouchableOpacity 
-                    style={styles.saveBtn}
+                    style={[styles.saveBtn, (!hasChanges() || isSaving) && styles.disabledBtn]}
                     onPress={handleSaveProfile}
-                    disabled={isSaving}
+                    disabled={isSaving || !hasChanges()}
                   >
                     {isSaving ? (
                       <ActivityIndicator size="small" color="#fff" />
@@ -354,7 +421,7 @@ export default function Profile({ onNavigate }) {
                   </TouchableOpacity>
 
                   <TouchableOpacity 
-                    style={styles.cancelBtn}
+                    style={[styles.cancelBtn, isSaving && styles.disabledBtn]}
                     onPress={handleCancelEdit}
                     disabled={isSaving}
                   >
@@ -388,7 +455,7 @@ export default function Profile({ onNavigate }) {
 
       <SuccessMessage
         visible={showSuccess}
-        message={"Profile Updated Successfully"}
+        message={successMessage}
         onClose={() => setShowSuccess(false)}
       />
 
