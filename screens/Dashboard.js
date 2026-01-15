@@ -12,7 +12,7 @@ import {
   AppState,
   Alert,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons , MaterialIcons } from "@expo/vector-icons";
 import styles from "../styles/DashboardStyles";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "../constants/api";
@@ -606,6 +606,16 @@ export default function Dashboard({ onNavigate }) {
           }}
           onSuccess={handleRescheduleSuccess}
           appointment={selectedAppointment}
+        />
+
+        <SelfAssessmentModal
+          visible={showAssessmentModal}
+          onClose={() => setShowAssessmentModal(false)}
+          questions={assessmentQuestions}
+          onAnswerSubmitted={() => {
+            fetchAssessmentQuestions();
+            setShowAssessmentModal(false);
+          }}
         />
 
         <SelfAssessmentModal

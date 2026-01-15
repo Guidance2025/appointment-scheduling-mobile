@@ -30,7 +30,9 @@ export default StyleSheet.create({
     paddingBottom: 20,
   },
   headerTitle: {
-    fontSize: 28,
+    position: "relative",
+    left: -6,
+    fontSize: 25,
     fontWeight: "800",
     color: "#111827",
     marginBottom: 6,

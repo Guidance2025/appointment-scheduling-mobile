@@ -75,6 +75,8 @@ export default StyleSheet.create({
     marginRight: 6,
   },
   welcomeSubtitle: {
+    position: "relative",
+    left: 5,
     fontSize: 16,
     color: "#6b7280",
     fontWeight: "500",
