@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 export const SuccessMessage = ({
@@ -11,6 +11,21 @@ export const SuccessMessage = ({
   iconName = "checkmark-circle",
   iconColor = "#48BB78",
 }) => {
+  const scaleValue = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    if (visible) {
+      Animated.spring(scaleValue, {
+        toValue: 1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      scaleValue.setValue(0);
+    }
+  }, [visible]);
+
   return (
     <Modal
       visible={visible}
@@ -19,18 +34,29 @@ export const SuccessMessage = ({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={styles.container}>
-          <View style={styles.iconContainer}>
-            <Ionicons name={iconName} size={64} color={iconColor} />
+        <Animated.View 
+          style={[
+            styles.container,
+            {
+              transform: [{ scale: scaleValue }]
+            }
+          ]}
+        >
+          <View style={[styles.iconContainer, { backgroundColor: `${iconColor}15` }]}>
+            <Ionicons name={iconName} size={56} color={iconColor} />
           </View>
 
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
 
-          <TouchableOpacity style={styles.button} onPress={onClose}>
+          <TouchableOpacity 
+            style={[styles.button, { backgroundColor: iconColor }]} 
+            onPress={onClose}
+            activeOpacity={0.8}
+          >
             <Text style={styles.buttonText}>{buttonText}</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -39,52 +65,63 @@ export const SuccessMessage = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 24,
   },
   container: {
-    backgroundColor: '#fff',
-    borderRadius: 50,
-    padding: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 32,
     width: '100%',
-    maxWidth: 400,
+    maxWidth: 360,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 10,
   },
   iconContainer: {
-    marginBottom: 16,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1F2937',
     marginBottom: 8,
     textAlign: 'center',
   },
   message: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 15,
+    color: '#6B7280',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 28,
     lineHeight: 22,
+    paddingHorizontal: 8,
   },
   button: {
-    backgroundColor: '#48BB78',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    borderRadius: 12,
     width: '100%',
     alignItems: 'center',
+    shadowColor: '#48BB78',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+    letterSpacing: 0.5,
   },
 });

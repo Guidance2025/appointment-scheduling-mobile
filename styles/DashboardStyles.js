@@ -5,13 +5,13 @@ const { width } = Dimensions.get('window');
 export default StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#f3f4f6",
     paddingTop: Platform.OS === 'android' ? 30 : 0,
   },
   
   container: {
     flex: 1,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#f3f4f6",
   },
 
   header: {
@@ -19,9 +19,9 @@ export default StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 16,
-    backgroundColor: "#E8F5E9",
+    paddingTop: 16,
+    paddingBottom: 20,
+    backgroundColor: "#f3f4f6",
   }, 
   headerLogo: {
     width: 70,
@@ -45,7 +45,7 @@ export default StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 6,
     borderWidth: 2.5,
-    borderColor: "#E8F5E9",
+    borderColor: "#f3f4f6",
   },
   notificationBadgeText: {
     color: "#fff",
@@ -57,16 +57,15 @@ export default StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 24,
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "#f3f4f6",
   },
   welcomeTitle: {
     fontSize: 28,
     fontWeight: "800",
-    color: "#1B5E20",
+    color: "#111827",
     lineHeight: 36,
     marginBottom: 12,
-    lineHeight: 37,
-    letterSpacing: 0.9,
+    letterSpacing: 0.5,
   },
   studentInfoContainer: {
     flexDirection: "row",
@@ -79,37 +78,148 @@ export default StyleSheet.create({
     position: "relative",
     left: 5,
     fontSize: 16,
-    color: "#252628ff",
-    fontWeight: "400",
-    letterSpacing: 0.4,
+    color: "#6b7280",
+    fontWeight: "500",
+    letterSpacing: 0.3,
+  },
+
+  cardActions: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+  },
+
+  rescheduleButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#16a34a",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    shadowColor: "#16a34a",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+
+  rescheduleButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+
+  cancelButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: "#DC2626",
+  },
+
+  cancelButtonText: {
+    color: "#DC2626",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+
+  pendingRescheduleInfo: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#E0E7FF",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingRight: 16,
+    borderRadius: 8,
+    gap: 6,
+  },
+
+  pendingRescheduleText: {
+    color: "#4F46E5",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+
+  infoValue: {
+    fontSize: 14,
+    color: "#374151",
+    marginLeft: 8,
+    flex: 1,
+    fontWeight: "500",
+  },
+
+  typeContainer: {
+    flex: 1,
+  },
+
+  appointmentType: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#111827",
+    letterSpacing: 0.2,
+  },
+
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 14,
+  },
+
+  cardBody: {
+    gap: 10,
+  },
+
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
 
   appointmentsContainer: {
     flex: 1,
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    paddingTop: 28,
-    marginTop: 4,
+    backgroundColor: "#f3f4f6",
+    paddingTop: 0,
   },
   appointmentsList: {
     flex: 1,
     paddingHorizontal: 20,
   },
   appointmentsListContent: {
+    paddingTop: 12,
     paddingBottom: 180,
   },
 
   assessmentButton: {
-    backgroundColor: "#FFFBEB",
+    backgroundColor: "#ffffff",
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#FEF3C7",
+    borderColor: "#FCD34D",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   assessmentButtonContent: {
     flexDirection: "row",
@@ -119,42 +229,27 @@ export default StyleSheet.create({
   assessmentButtonText: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#334155",
+    color: "#111827",
     letterSpacing: 0.2,
   },
 
   appointmentCard: {
-    backgroundColor: "#F8FFFE",
-    borderRadius: 16,
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
     padding: 18,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#D1FAE5",
+    borderColor: "#e5e7eb",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 2,
+    elevation: 3,
   },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 16,
-  },
-  typeContainer: {
-    flex: 1,
-    marginRight: 12,
-  },
-  appointmentType: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1E293B",
-    letterSpacing: 0.2,
-  },
+
   statusBadge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -166,20 +261,6 @@ export default StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.3,
     color: "#3B82F6",
-  },
-  cardBody: {
-    gap: 12,
-  },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  infoValue: {
-    fontSize: 14,
-    color: "#475569",
-    fontWeight: "500",
-    lineHeight: 20,
-    marginLeft: 8,
   },
 
   bookButtonContainer: {
@@ -194,28 +275,28 @@ export default StyleSheet.create({
   bookButton: {
     position: "relative",
     bottom: 20,
-    backgroundColor: "#48BB78",
-    borderRadius: 9,
-    paddingVertical: 18,
+    backgroundColor: "#16a34a",
+    borderRadius: 12,
+    paddingVertical: 16,
     paddingHorizontal: 24,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
-    shadowColor: "#48BB78",
+    shadowColor: "#16a34a",
     shadowOffset: {
       width: 0,
-      height: 8,
+      height: 4,
     },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
   },
   bookButtonIcon: {
     marginRight: 8,
   },
   bookButtonText: {
     color: "#fff",
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "700",
     letterSpacing: 0.5,
   },
@@ -256,7 +337,7 @@ export default StyleSheet.create({
     letterSpacing: 0.3,
   },
   navLabelActive: {
-    color: "#48BB78",
+    color: "#16a34a",
     fontWeight: "700",
   },
 
@@ -268,37 +349,50 @@ export default StyleSheet.create({
     paddingTop: 60,
   },
   emptyAppointmentsContainer: {
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 60,
-    paddingHorizontal: 40,
+    paddingVertical: 48,
+    paddingHorizontal: 32,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   emptyIconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#F1F5F9",
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#f3f4f6",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 16,
   },
   emptyTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#334155",
+    color: "#111827",
     marginBottom: 8,
     textAlign: "center",
   },
   emptySubtitle: {
-    fontSize: 15,
-    color: "#64748B",
+    fontSize: 14,
+    color: "#6b7280",
     fontWeight: "500",
     textAlign: "center",
-    lineHeight: 22,
+    lineHeight: 20,
   },
   loadingText: {
     marginTop: 16,
-    color: "#64748B",
+    color: "#6b7280",
     fontSize: 15,
     fontWeight: "600",
   },
