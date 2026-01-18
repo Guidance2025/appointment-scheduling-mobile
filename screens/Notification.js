@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   SafeAreaView,
   View,
@@ -10,11 +10,17 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from "react-native";
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import styles from "../styles/NotificationStyles";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "../constants/api";
 import BottomNavBar from "./layout/BottomNavBar";
+import { SuccessMessage } from './modal/message/SuccessMessage';
+import {
+  parseUTCToPH,
+  formatDatePH,
+  formatRelativeTimePH,
+} from "../utils/dateTime";
 
 export default function Notification({ onNavigate }) {
   const [selected, setSelected] = useState(null);
@@ -24,73 +30,146 @@ export default function Notification({ onNavigate }) {
   const [initialLoading, setInitialLoading] = useState(true);
   const [isDisabled, setIsDisabled] = useState(false);
   const [activeScreen, setIsActiveScreen] = useState("notification");
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [successModal, setSuccessModal] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    iconName: 'checkmark-circle',
+    iconColor: '#48BB78'
+  });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); 
+    
+    return () => clearInterval(timer);
+  }, []);
+
+  const showSuccessMessage = (title, message, iconName = 'checkmark-circle', iconColor = '#48BB78') => {
+    setSuccessModal({
+      visible: true,
+      title,
+      message,
+      iconName,
+      iconColor
+    });
+  };
+
+  const closeSuccessMessage = () => {
+    setSuccessModal({
+      visible: false,
+      title: '',
+      message: '',
+      iconName: 'checkmark-circle',
+      iconColor: '#48BB78'
+    });
+  };
+
+  const getRelativeTime = (createdAt) => {
+    return formatRelativeTimePH(createdAt, currentTime);
+  };
 
   const getActionTypeLabel = (actionType) => {
     const labels = {
       APPOINTMENT_REQUEST: "Appointment Request",
+      APPOINTMENT_RESPONSE: "Appointment Response", 
       ACCEPT: "Appointment Accepted",
       DECLINE: "Appointment Declined",
+      APPOINTMENT_REMINDER: "Appointment Reminder",
+      APPOINTMENT_UPDATE: "Appointment Update",
+      APPOINTMENT_CANCELLED: "Appointment Cancelled",
+      APPOINTMENT_EXPIRED: "Appointment Expired",
     };
     return labels[actionType] || actionType;
   };
 
   const getNotificationStyle = (notif) => {
     const styles_array = [styles.notifCard];
+    if (notif.isRead === 0) styles_array.push(styles.notifCardUnread);
     
-    if (notif.isRead === 0) {
-      styles_array.push(styles.notifCardUnread);
+    switch (notif.actionType) {
+      case "ACCEPT":
+        styles_array.push(styles.notifCardAccepted);
+        break;
+      case "DECLINE":
+      case "APPOINTMENT_CANCELLED":
+      case "APPOINTMENT_EXPIRED":
+        styles_array.push(styles.notifCardDeclined);
+        break;
+      case "APPOINTMENT_REQUEST":
+      case "APPOINTMENT_RESPONSE": 
+        styles_array.push(styles.notifCardRequest);
+        break;
+      case "APPOINTMENT_REMINDER":
+        styles_array.push(styles.notifCardReminder);
+        break;
+      case "APPOINTMENT_UPDATE":
+        styles_array.push(styles.notifCardUpdate);
+        break;
+      default: 
+        break;
     }
-    
-    if (notif.actionType === "ACCEPT") {
-      styles_array.push(styles.notifCardAccepted);
-    } else if (notif.actionType === "DECLINE") {
-      styles_array.push(styles.notifCardDeclined);
-    } else if (notif.actionType === "APPOINTMENT_REQUEST") {
-      styles_array.push(styles.notifCardRequest);
-    }else if (notif.actionType === "APPOINTMENT_REMINDER") {
-      styles_array.push(styles.notifCardReminder);
-    }
-    
     return styles_array;
   };
 
-  const getAllNotifications = async () => {
+  const getAllNotifications = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem("jwtToken");
       const userId = await AsyncStorage.getItem("userId");
-
+      
       if (!token || !userId) {
-        console.error("No token or userId found");
+        console.warn("Missing token or userId");
         return;
       }
 
       const response = await fetch(`${API_BASE_URL}/notification/${userId}`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+        headers: { 
+          "Content-Type": "application/json", 
+          Authorization: `Bearer ${token}` 
         },
       });
-
+      
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Failed to fetch notifications: ${errorText}`);
+        throw new Error(errorText);
       }
 
       const data = await response.json();
-      data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      setNotifications(data);
+      
+      const now = new Date();
+      const filteredData = data.filter(notif => {
+        if (notif.actionType === "APPOINTMENT_EXPIRED") {
+          const notifTime = parseUTCToPH(notif.createdAt);
+          if (!notifTime) return false;
+          const hoursSinceExpired = (now - notifTime) / (1000 * 60 * 60);
+          return hoursSinceExpired < 24;
+        }
+        return true;
+      });
+      
+      const sortedData = filteredData.sort((a, b) => {
+        const dateA = parseUTCToPH(a.createdAt);
+        const dateB = parseUTCToPH(b.createdAt);
+        
+        if (!dateA || !dateB) return 0;
+        return dateB.getTime() - dateA.getTime(); 
+      });
+      
+      setNotifications(sortedData);
     } catch (error) {
       console.error("Error fetching notifications:", error);
     } finally {
       setInitialLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     getAllNotifications();
-  }, []);
+  }, [getAllNotifications]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -103,30 +182,35 @@ export default function Notification({ onNavigate }) {
   };
 
   const respondToAppointment = async (appointmentId, action) => {
-    const token = await AsyncStorage.getItem("jwtToken");
-
     try {
+      const token = await AsyncStorage.getItem("jwtToken");
+      
+      if (!token) {
+        throw new Error("Authentication token not found");
+      }
+
       setLoading(true);
+      
       const response = await fetch(
-        `${API_BASE_URL}/counselor/${appointmentId}/response`,
+        `${API_BASE_URL}/student/${appointmentId}/response`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+          headers: { 
+            "Content-Type": "application/json", 
+            Authorization: `Bearer ${token}` 
           },
           body: JSON.stringify({ action }),
         }
       );
-
+      
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Failed to respond: ${errorText}`);
+        throw new Error(errorText);
       }
-
+      
       return await response.json();
     } catch (error) {
-      console.error("Error responding to appointment:", error);
+      console.error(`Error ${action.toLowerCase()}ing appointment:`, error);
       throw error;
     } finally {
       setLoading(false);
@@ -134,61 +218,84 @@ export default function Notification({ onNavigate }) {
   };
 
   const handleAccept = async (appointmentId) => {
+    if (!appointmentId) return;
+    
     try {
       setIsDisabled(true);
       await respondToAppointment(appointmentId, "ACCEPT");
-      alert("Appointment accepted successfully");
       setSelected(null);
-      getAllNotifications();
+      await getAllNotifications();
+      showSuccessMessage(
+        "Appointment Accepted",
+        "You have successfully accepted the appointment. The counselor has been notified.",
+        "checkmark-circle",
+        "#48BB78"
+      );
     } catch (error) {
-      alert("Failed to accept appointment");
+      showSuccessMessage(
+        "Failed to Accept",
+        "Failed to accept appointment. Please try again.",
+        "close-circle",
+        "#EF4444"
+      );
     } finally {
       setIsDisabled(false);
     }
   };
 
   const handleDecline = async (appointmentId) => {
+    if (!appointmentId) return;
+    
     try {
       setIsDisabled(true);
       await respondToAppointment(appointmentId, "DECLINE");
-      alert("Appointment declined successfully");
       setSelected(null);
-      getAllNotifications();
+      await getAllNotifications();
+      showSuccessMessage(
+        "Appointment Declined",
+        "You have declined the appointment. The counselor has been notified.",
+        "close-circle",
+        "#F59E0B"
+      );
     } catch (error) {
-      alert("Failed to decline appointment");
+      showSuccessMessage(
+        "Failed to Decline",
+        "Failed to decline appointment. Please try again.",
+        "close-circle",
+        "#EF4444"
+      );
     } finally {
       setIsDisabled(false);
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "Unknown date";
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now - date);
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return "Today";
-    if (diffDays === 1) return "Yesterday";
-    if (diffDays < 7) return `${diffDays} days ago`;
-
-    return date.toLocaleDateString();
-  };
-
   const markAsRead = async (notificationId) => {
+    if (!notificationId) return;
+    
     try {
       const token = await AsyncStorage.getItem("jwtToken");
+      
+      if (!token) return;
+
       await fetch(
         `${API_BASE_URL}/notification/markAsRead/mobile/${notificationId}`,
         {
           method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+          headers: { 
+            "Content-Type": "application/json", 
+            Authorization: `Bearer ${token}` 
           },
         }
       );
-      getAllNotifications();
+      
+      setNotifications(prev => 
+        prev.map(notif => 
+          notif.notificationId === notificationId 
+            ? { ...notif, isRead: 1 }
+            : notif
+        )
+      );
+      
     } catch (error) {
       console.error("Error marking notification as read:", error);
     }
@@ -206,10 +313,10 @@ export default function Notification({ onNavigate }) {
 
       <ScrollView
         contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
+        showsVerticalScrollIndicator={false}
       >
         {initialLoading ? (
           <View style={styles.loadingContainer}>
@@ -227,9 +334,10 @@ export default function Notification({ onNavigate }) {
               style={getNotificationStyle(notif)}
               onPress={() => {
                 setSelected(notif);
-                markAsRead(notif.notificationId);
+                if (notif.isRead === 0) {
+                  markAsRead(notif.notificationId);
+                }
               }}
-              activeOpacity={0.7}
             >
               <View style={styles.notifLeft}>
                 <Text style={styles.notifType}>
@@ -239,9 +347,10 @@ export default function Notification({ onNavigate }) {
                   {notif.message || "New notification"}
                 </Text>
                 <Text style={styles.notifDate}>
-                  {formatDate(notif.createdAt)}
+                  {getRelativeTime(notif.createdAt)}
                 </Text>
               </View>
+
               <View style={styles.notifRight}>
                 {notif.isRead === 0 && <View style={styles.unreadIndicator} />}
               </View>
@@ -260,10 +369,12 @@ export default function Notification({ onNavigate }) {
           <Text style={styles.modalTitle}>
             {getActionTypeLabel(selected?.actionType)}
           </Text>
+
           <Text style={styles.modalDate}>
-            {formatDate(selected?.createdAt)}
+            {getRelativeTime(selected?.createdAt)}
           </Text>
-          <ScrollView style={{ marginTop: 10 }}>
+
+          <ScrollView style={{ marginTop: 10, maxHeight: 300 }}>
             <Text style={styles.modalDetails}>
               {selected?.message || "No details available"}
             </Text>
@@ -277,11 +388,8 @@ export default function Notification({ onNavigate }) {
                     styles.acceptButton,
                     (loading || isDisabled) && styles.acceptButtonDisabled,
                   ]}
-                  onPress={() =>
-                    handleAccept(selected?.appointment.appointmentId)
-                  }
+                  onPress={() => handleAccept(selected?.appointment?.appointmentId)}
                   disabled={loading || isDisabled}
-                  activeOpacity={0.8}
                 >
                   <Text style={styles.actionButtonText}>
                     {loading ? "Processing..." : "Accept"}
@@ -293,11 +401,8 @@ export default function Notification({ onNavigate }) {
                     styles.declineButton,
                     (loading || isDisabled) && styles.declineButtonDisabled,
                   ]}
-                  onPress={() =>
-                    handleDecline(selected?.appointment.appointmentId)
-                  }
+                  onPress={() => handleDecline(selected?.appointment?.appointmentId)}
                   disabled={loading || isDisabled}
-                  activeOpacity={0.8}
                 >
                   <Text style={styles.actionButtonText}>
                     {loading ? "Processing..." : "Decline"}
@@ -309,17 +414,22 @@ export default function Notification({ onNavigate }) {
           <TouchableOpacity
             style={styles.modalBackBtn}
             onPress={() => setSelected(null)}
-            activeOpacity={0.7}
           >
             <Text style={styles.modalBackText}>Close</Text>
           </TouchableOpacity>
         </View>
       </Modal>
 
-      <BottomNavBar
-        activeScreen={activeScreen}
-        onNavigate={handleNavigation}
+      <SuccessMessage
+        visible={successModal.visible}
+        title={successModal.title}
+        message={successModal.message}
+        iconName={successModal.iconName}
+        iconColor={successModal.iconColor}
+        onClose={closeSuccessMessage}
       />
+
+      <BottomNavBar activeScreen={activeScreen} onNavigate={handleNavigation} />
     </SafeAreaView>
   );
 }

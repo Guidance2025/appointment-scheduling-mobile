@@ -4,7 +4,7 @@ const { width } = Dimensions.get("window");
 export default StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#f3f4f6",
     paddingTop: Platform.OS === 'android' ? 30 : 0,
   },
   
@@ -151,7 +151,7 @@ export default StyleSheet.create({
 
   acceptButton: {
     flex: 1,
-    backgroundColor: "#5dd174",
+    backgroundColor: "#16a34a",
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: "center",
@@ -165,7 +165,7 @@ export default StyleSheet.create({
 
   declineButton: {
     flex: 1,
-    backgroundColor: "#e3726a",
+    backgroundColor: "#dc2626",
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: "center",
@@ -197,23 +197,52 @@ export default StyleSheet.create({
     fontSize: 14,
   },
 
+  // ✅ Unread notification (general)
   notifCardUnread: {
-    backgroundColor: "#d9ecf9ff",
+    backgroundColor: "#eff6ff",
   },
 
+  // ✅ Appointment Accepted - Green
   notifCardAccepted: {
-    backgroundColor: "#def5e8ff",
+    backgroundColor: "#f0fdf4",
   },
 
+  // ✅ Appointment Declined/Cancelled - Red
   notifCardDeclined: {
-    backgroundColor: "#fef1f0",
+    backgroundColor: "#fef2f2",
   },
 
+  // ✅ Appointment Request/Response - Blue
   notifCardRequest: {
-    backgroundColor: "#e3f2fd",
+    backgroundColor: "#eff6ff",
   },
+
+  // ✅ Appointment Reminder - Yellow
   notifCardReminder: {
-    backgroundColor: "#f3f59bff",
+    backgroundColor: "#fef9c3",
+  },
+
+  // ✅ Appointment Update - Orange
+  notifCardUpdate: {
+    backgroundColor: "#fff7ed",
+  },
+
+  // ✅ Appointment Expired - Amber
+  notifCardExpired: {
+    backgroundColor: "#fef3c7",
+  },
+
+  // ✅ Reschedule Request - Purple
+  notifCardReschedule: {
+    backgroundColor: "#faf5ff",
+  },
+
+  notifCardRescheduleApproved: {
+    backgroundColor: "#f0fdfa",
+  },
+
+  notifCardRescheduleDeclined: {
+    backgroundColor: "#fdf2f8",
   },
 
   emptyContainer: {
@@ -244,11 +273,13 @@ export default StyleSheet.create({
   navBar: {
     flexDirection: "row",
     justifyContent: "space-around",
-    backgroundColor: "#48BB78",
+    backgroundColor: "#ffffff",
     paddingVertical: 12,
     position: "absolute",
     bottom: 0,
     width: "100%",
+    borderTopWidth: 1,
+    borderTopColor: "#e5e7eb",
   },
   
   navItem: { 
@@ -256,7 +287,7 @@ export default StyleSheet.create({
   },
   
   navLabel: { 
-    color: "#b9b9b9ff", 
+    color: "#6b7280", 
     fontSize: 11, 
     marginTop: 2,
   },
