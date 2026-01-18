@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  StyleSheet,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import styles from "../styles/ContentHubStyles";
@@ -19,6 +18,7 @@ export default function ContentHub({ onNavigate }) {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [commentModalOpen, setCommentModalOpen] = useState(false);
   const [activePostId, setActivePostId] = useState(null);
+  const [bulkDeleting, setBulkDeleting] = useState(false); // Assuming you want to handle bulk delete
 
   const authHeaders = async () => {
     const token = await AsyncStorage.getItem("jwtToken");
@@ -41,7 +41,14 @@ export default function ContentHub({ onNavigate }) {
       const resQuote = await fetch(`${API_BASE_URL}/posts/quote-of-the-day`, { headers });
       const postsData = await resPosts.json();
       const quoteData = resQuote.ok ? await resQuote.json() : null;
-      setPosts(postsData || []);
+
+      // Ensure postsData is an array
+      if (Array.isArray(postsData)) {
+        setPosts(postsData);
+      } else {
+        console.warn("Unexpected posts data:", postsData);
+        setPosts([]);
+      }
       setQuote(quoteData);
     } catch (err) {
       console.error("Failed to load ContentHub:", err);
@@ -77,7 +84,6 @@ export default function ContentHub({ onNavigate }) {
       <View style={styles.container}>
         <Text style={styles.title}>Content Hub</Text>
         <Text style={styles.subtitle}>
-          Guidance posts, announcements, and Quote of the Day.
         </Text>
 
         {loading ? (
@@ -106,22 +112,22 @@ export default function ContentHub({ onNavigate }) {
 
             {/* Posts */}
             <View style={styles.postsCard}>
-              <Text style={styles.sectionTitle}>Posts</Text>
-              {posts.length === 0 ? (
-                <Text style={styles.emptyMessage}>No posts yet.</Text>
-              ) : (
+              <Text style={styles.sectionTitle}>Latest Posts</Text>
+              {Array.isArray(posts) && posts.length > 0 ? (
                 posts.map((p) => (
-                    <TouchableOpacity
-                    style={styles.commentButton}
+                  <TouchableOpacity
+                    key={p.postId}
+                    style={[
+                      styles.postItem,
+                      selectedIds.has(p.postId) && styles.postSelected,
+                    ]}
                     onPress={() => {
-                        setActivePostId(p.postId);
-                        setCommentModalOpen(true);
+                      setActivePostId(p.postId);
+                      setCommentModalOpen(true);
                     }}
-                    >
+                  >
                     <View style={styles.postHeader}>
-                      <Text style={styles.postAuthor}>
-                        {p.postedBy || "Guidance Staff"}
-                      </Text>
+                      <Text style={styles.postAuthor}>{p.postedBy || "Guidance Staff"}</Text>
                       <Text style={styles.postCategory}>{p.categoryName}</Text>
                       {p.sectionName && (
                         <Text style={styles.postSection}>• {p.sectionName}</Text>
@@ -134,16 +140,23 @@ export default function ContentHub({ onNavigate }) {
                     <Text style={styles.commentButtonText}>Comments</Text>
                   </TouchableOpacity>
                 ))
+              ) : (
+                <Text style={styles.emptyMessage}>No posts yet.</Text>
               )}
             </View>
-
             <CommentModal
-                postId={activePostId}
-                isOpen={commentModalOpen}
-                onClose={() => setCommentModalOpen(false)}
-                />
+              postId={activePostId}
+              isOpen={commentModalOpen}
+              onClose={() => setCommentModalOpen(false)}
+            />
           </ScrollView>
         )}
+        <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={() => onNavigate("dashboard")}
+                  >
+                    <Text style={styles.cancelButtonText}>Back to Home</Text>
+                  </TouchableOpacity>
       </View>
     </View>
   );
