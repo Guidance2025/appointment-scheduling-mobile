@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Modal,
   View,
@@ -9,49 +9,34 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import styles from "../styles/ExitInterviewStyles";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "../constants/api";
+import styles from "../styles/ExitInterviewStyles";
+import { SuccessMessage } from './modal/message/SuccessMessage';
 
-export default function ExitInterview({ visible, onClose, onAnswerUpdate }) {
-  const [questions, setQuestions] = useState([]);
+export default function ExitInterview({
+  visible,
+  onClose,
+  questions,
+  onAnswerSubmitted,
+}) {
   const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [answer, setAnswer] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [onSuccess, setOnSuccess] = useState(false);
 
-  // Sync internal modal visibility with the prop
-  useEffect(() => {
-    setModalVisible(visible);
-    if (visible) {
-      // Reset state when opening
-      fetchQuestions();
-      setSelectedQuestion(null);
-      setAnswer("");
-      setSuccess(false);
-    }
-  }, [visible]);
-
-  const handleCloseModal = () => {
-    setModalVisible(false);
-    if (onClose) onClose();
-  };
-
-  const fetchQuestions = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/questions`);
-      const data = await response.json();
-      const items = Array.isArray(data) ? data : [];
-      setQuestions(items);
-    } catch (error) {
-      console.error("Failed to fetch questions:", error);
-      setQuestions([]);
+  const handleSuccessClose = () => {
+    setOnSuccess(false);
+    handleBack();
+    if (onAnswerSubmitted) {
+      onAnswerSubmitted();
     }
   };
 
-  const handleQuestionSelect = (question) => {
+  const handleSelectQuestion = (question) => {
     setSelectedQuestion(question);
     setAnswer("");
   };
@@ -61,31 +46,59 @@ export default function ExitInterview({ visible, onClose, onAnswerUpdate }) {
     setAnswer("");
   };
 
-  const handleAnswerSubmit = async () => {
-    if (!selectedQuestion) return;
+  const handleSubmitAnswer = async () => {
+    if (!answer.trim()) {
+      Alert.alert("Error", "Please enter your answer before submitting.");
+      return;
+    }
 
-    setLoading(true);
     try {
-      await fetch(`${API_BASE_URL}/answers`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          questionId: selectedQuestion.id,
-          answer,
-        }),
-      });
+      setSubmitting(true);
+      const token = await AsyncStorage.getItem("jwtToken");
 
-      setLoading(false);
-      setSuccess(true);
-      if (onAnswerUpdate) {
-        onAnswerUpdate({ questionId: selectedQuestion.id, answer });
+      if (!token) {
+        Alert.alert("Error", "Authentication required");
+        setSubmitting(false);
+        return;
       }
-      fetchQuestions();
+
+      const response = await fetch(
+        `${API_BASE_URL}/exit-interview/submit-answer`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            questionId: selectedQuestion.id,
+            responseText: answer.trim(),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to submit answer");
+      }
+
+      setSubmitting(false);
+      setOnSuccess(true);
+    
+
     } catch (error) {
-      console.error("Failed to submit answer:", error);
-      setLoading(false);
+      console.error("Error submitting answer:", error);
+      setSubmitting(false);
+      
+      if (error.message.includes("already answered")) {
+        Alert.alert("Already Answered", "You have already answered this question.");
+        handleBack();
+        if (onAnswerSubmitted) {
+          onAnswerSubmitted();
+        }
+      } else {
+        Alert.alert("Error", "Failed to submit answer. Please try again.");
+      }
     }
   };
 
@@ -132,125 +145,130 @@ export default function ExitInterview({ visible, onClose, onAnswerUpdate }) {
     ));
   };
 
-  const renderAnswerView = () => (
-    <View style={styles.answerContainer}>
-      <View style={styles.answerHeader}>
-        <TouchableOpacity
-          onPress={handleBack}
-          style={styles.backButton}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="arrow-back" size={24} color="#1B5E20" />
-        </TouchableOpacity>
-        <Text style={styles.answerHeaderTitle}>Answer Question</Text>
-      </View>
-
-      <ScrollView
-        style={styles.answerContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.questionDetailCard}>
-          <Text style={styles.questionDetailLabel}>Question</Text>
-          <Text style={styles.questionDetailText}>
-            {selectedQuestion?.questionText}
-          </Text>
-
-          <View style={styles.questionDetailMeta}>
-            <Ionicons name="person-outline" size={14} color="#64748B" />
-            <Text style={styles.questionDetailMetaText}>
-              Posted by {selectedQuestion?.guidanceStaff?.person?.firstName}{" "}
-              {selectedQuestion?.guidanceStaff?.person?.lastName}
-            </Text>
-          </View>
-
-          <View style={styles.questionDetailMeta}>
-            <Ionicons name="calendar-outline" size={14} color="#64748B" />
-            <Text style={styles.questionDetailMetaText}>
-              {new Date(selectedQuestion?.dateCreated).toLocaleDateString("en-US", {
-                month: "long",
-                day: "numeric",
-                year: "numeric",
-              })}
-            </Text>
-          </View>
+  const renderAnswerView = () => {
+    return (
+      <View style={styles.answerContainer}>
+        <View style={styles.answerHeader}>
+          <TouchableOpacity
+            onPress={handleBack}
+            style={styles.backButton}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={24} color="#1B5E20" />
+          </TouchableOpacity>
+          <Text style={styles.answerHeaderTitle}>Answer Question</Text>
         </View>
 
-        <View style={styles.answerInputContainer}>
-          <Text style={styles.answerInputLabel}>Your Answer *</Text>
-          <TextInput
-            style={styles.answerInput}
-            placeholder="Type your answer here..."
-            placeholderTextColor="#94A3B8"
-            value={answer}
-            onChangeText={setAnswer}
-            multiline
-            numberOfLines={8}
-            textAlignVertical="top"
-            editable={!loading}
+        <ScrollView
+          style={styles.answerContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.questionDetailCard}>
+            <Text style={styles.questionDetailLabel}>Question</Text>
+            <Text style={styles.questionDetailText}>
+              {selectedQuestion?.questionText}
+            </Text>
+
+            <View style={styles.questionDetailMeta}>
+              <Ionicons name="person-outline" size={14} color="#64748B" />
+              <Text style={styles.questionDetailMetaText}>
+                Posted by {selectedQuestion?.guidanceStaff?.person?.firstName}{" "}
+                {selectedQuestion?.guidanceStaff?.person?.lastName}
+              </Text>
+            </View>
+
+            <View style={styles.questionDetailMeta}>
+              <Ionicons name="calendar-outline" size={14} color="#64748B" />
+              <Text style={styles.questionDetailMetaText}>
+                {new Date(selectedQuestion?.dateCreated).toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  }
+                )}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.answerInputContainer}>
+            <Text style={styles.answerInputLabel}>Your Answer *</Text>
+            <TextInput
+              style={styles.answerInput}
+              placeholder="Type your answer here..."
+              placeholderTextColor="#94A3B8"
+              value={answer}
+              onChangeText={setAnswer}
+              multiline
+              numberOfLines={8}
+              textAlignVertical="top"
+              editable={!submitting}
+            />
+            <Text style={styles.answerInputHint}>
+              Take your time to reflect and share your thoughts honestly.
+            </Text>
+          </View>
+        </ScrollView>
+
+        <View style={styles.answerActions}>
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={handleBack}
+            activeOpacity={0.7}
+            disabled={submitting}
+          >
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.submitButton,
+              submitting && styles.submitButtonDisabled,
+            ]}
+            onPress={handleSubmitAnswer}
+            activeOpacity={0.7}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                <Text style={styles.submitButtonText}>Submit Answer</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+        
+        {onSuccess && (
+          <SuccessMessage 
+            visible={onSuccess} 
+            onClose={handleSuccessClose} 
+            message="Your answer has been submitted successfully!" 
           />
-          <Text style={styles.answerInputHint}>
-            Take your time to reflect and share your thoughts honestly.
-          </Text>
-        </View>
-      </ScrollView>
-
-      <View style={styles.answerActions}>
-        <TouchableOpacity
-          style={styles.cancelButton}
-          onPress={handleBack}
-          activeOpacity={0.7}
-          disabled={loading}
-        >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.submitButton,
-            loading && styles.submitButtonDisabled,
-          ]}
-          onPress={handleAnswerSubmit}
-          activeOpacity={0.7}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <>
-              <Ionicons name="checkmark-circle" size={20} color="#fff" />
-              <Text style={styles.submitButtonText}>Submit Answer</Text>
-            </>
-          )}
-        </TouchableOpacity>
+        )}
       </View>
-
-      {success && (
-        <View style={styles.successMessage}>
-          <Text style={styles.successText}>Answer submitted successfully!</Text>
-        </View>
-      )}
-    </View>
-  );
+    );
+  };
 
   return (
     <Modal
-      visible={modalVisible}
+      visible={visible}
       animationType="slide"
       transparent={false}
       onRequestClose={onClose}
     >
       <KeyboardAvoidingView
         style={styles.modalContainer}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         {selectedQuestion ? (
           renderAnswerView()
         ) : (
           <>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Self-Assessment</Text>
+              <Text style={styles.modalTitle}>Exit Interview</Text>
               <TouchableOpacity
-                onPress={handleCloseModal}
+                onPress={onClose}
                 style={styles.closeButton}
                 activeOpacity={0.7}
               >

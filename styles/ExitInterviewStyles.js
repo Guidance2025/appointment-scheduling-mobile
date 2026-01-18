@@ -1,4 +1,4 @@
-import { Platform, StyleSheet } from "react-native";
+import { StyleSheet, Platform } from "react-native";
 
 export default StyleSheet.create({
   // Outer container for the modal
@@ -70,6 +70,7 @@ export default StyleSheet.create({
   },
   questionCardInfo: {
     flex: 1,
+    marginRight: 8,
   },
   questionCardTitle: {
     fontSize: 15,
@@ -84,29 +85,31 @@ export default StyleSheet.create({
     fontWeight: "500",
   },
 
-  // Empty state when no questions
   emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    justifyContent: "center",
+    paddingVertical: 80,
+    paddingHorizontal: 40,
   },
   emptyTitle: {
     fontSize: 18,
     fontWeight: "700",
     color: "#334155",
     marginTop: 16,
+    marginBottom: 8,
+    textAlign: "center",
   },
   emptySubtitle: {
     fontSize: 14,
     color: "#64748B",
-    marginTop: 8,
     textAlign: "center",
+    lineHeight: 20,
+    fontWeight: "500",
   },
 
-  // Container for answering a question
   answerContainer: {
     flex: 1,
+    backgroundColor: "#F8FAFC",
   },
 
   // Header with back and title
@@ -210,6 +213,10 @@ export default StyleSheet.create({
     fontWeight: "500",
     lineHeight: 22,
   },
+  answerInputDisabled: {
+    backgroundColor: "#F1F5F9",
+    color: "#64748B",
+  },
   answerInputHint: {
     fontSize: 12,
     color: "#64748B",
@@ -218,12 +225,10 @@ export default StyleSheet.create({
     fontWeight: "500",
   },
 
-  // Action buttons at bottom
   answerActions: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 16,
     paddingHorizontal: 20,
+    paddingVertical: 20,
     backgroundColor: "#fff",
     borderTopWidth: 1,
     borderTopColor: "#E2E8F0",
@@ -237,59 +242,45 @@ export default StyleSheet.create({
     elevation: 5,
   },
   cancelButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    flex: 1,
+    paddingVertical: 16,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#D1FAE5",
-    backgroundColor: "#fff",
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
   },
   cancelButtonText: {
     fontSize: 16,
     fontWeight: "700",
     color: "#475569",
+    letterSpacing: 0.3,
   },
   submitButton: {
+    flex: 2,
+    paddingVertical: 16,
+    borderRadius: 12,
+    backgroundColor: "#48BB78",
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#48BB78",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 12,
+    justifyContent: "center",
+    shadowColor: "#48BB78",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  submitText: {
+  submitButtonDisabled: {
+    backgroundColor: "#94A3B8",
+  },
+  submitButtonText: {
+    fontSize: 16,
+    fontWeight: "700",
     color: "#fff",
-    fontSize: 16,
     marginLeft: 8,
-  },
-
-  // Success message overlay
-  successMessage: {
-    position: "absolute",
-    top: "40%",
-    left: 0,
-    right: 0,
-    backgroundColor: "#d4edda",
-    padding: 20,
-    alignItems: "center",
-    borderRadius: 8,
-  },
-  successText: {
-    color: "#155724",
-    fontSize: 16,
-  },
-
-  openButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    backgroundColor: '#007bff',
-    borderRadius: 8,
-    alignItems: 'center',
-    margin: 16,
-  },
-  openButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    letterSpacing: 0.3,
   },
 });
