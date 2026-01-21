@@ -74,6 +74,26 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
 
   const appointmentTypes = ["Counseling", "Academic Advising", "Career Guidance", "Personal Issue"];
 
+  const clearFieldError = (fieldName) => {
+    setErrorFields(prev => ({ ...prev, [fieldName]: false }));
+    
+    if (error) {
+      const errorLower = error.toLowerCase();
+      const shouldClearError = (
+        (fieldName === 'appointmentType' && errorLower.includes('appointment type')) ||
+        (fieldName === 'counselor' && errorLower.includes('counselor')) ||
+        (fieldName === 'date' && (errorLower.includes('date') || errorLower.includes('weekend') || errorLower.includes('blocked') || errorLower.includes('past') || errorLower.includes('available') || errorLower.includes('too late'))) ||
+        (fieldName === 'startTime' && (errorLower.includes('start') || errorLower.includes('8:00 am') || errorLower.includes('time has already passed') || errorLower.includes('after'))) ||
+        (fieldName === 'endTime' && (errorLower.includes('end') || errorLower.includes('5:00 pm') || errorLower.includes('after'))) ||
+        (fieldName === 'notes' && errorLower.includes('notes'))
+      );
+      
+      if (shouldClearError) {
+        setError('');
+      }
+    }
+  };
+
   useEffect(() => {
     if (visible) {
       fetchGuidanceStaff();
@@ -118,7 +138,8 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
             error.includes("duration") || 
             error.includes("exceed") ||
             error.includes("blocked") ||
-            error.includes("not available")
+            error.includes("not available") ||
+            error.includes("Too late")
           ) {
             setError("");
             clearErrorFields();
@@ -579,14 +600,17 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
           }
           if (responseText.toLowerCase().includes("you already have an appointment with this counselor on this day")) {
             setError("You already have an appointment with this counselor on this day. Please choose a different date or counselor.");
+            setErrorFields(prev => ({ ...prev, counselor: true, date: true }));
             return;
           }
           if (responseText.toLowerCase().includes("guidance staff has an appointment")) {
             setError("This counselor already has an appointment at this time. Please choose a different time.");
+            setErrorFields(prev => ({ ...prev, startTime: true, endTime: true }));
             return;
           }
           if (responseText.toLowerCase().includes("time slot")) {
             setError("This time slot is not available. Please choose a different time.");
+            setErrorFields(prev => ({ ...prev, startTime: true, endTime: true }));
             return;
           }
           if (responseText.toLowerCase().includes("invalid")) {
@@ -599,19 +623,23 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
         
         if (response.status === 404) {
           setError("Counselor not found. Please select a different counselor.");
+          setErrorFields(prev => ({ ...prev, counselor: true }));
           return;
         }
         
         if (response.status === 409) {
           if (responseText.includes("YOU ALREADY HAVE AN APPOINTMENT WITH THIS COUNSELOR")) {
             setError("You already have an appointment with this counselor on this day. Please choose a different date or counselor.");
+            setErrorFields(prev => ({ ...prev, counselor: true, date: true }));
             return;
           }
           if (responseText.toLowerCase().includes("time conflict") || responseText.toLowerCase().includes("overlapping")) {
             setError("Time conflict detected. Please choose a different time.");
+            setErrorFields(prev => ({ ...prev, startTime: true, endTime: true }));
             return;
           }
           setError("Scheduling conflict. Please choose a different time or date.");
+          setErrorFields(prev => ({ ...prev, date: true, startTime: true, endTime: true }));
           return;
         }
         
@@ -672,10 +700,15 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
         return;
       }
       
-      setGuidanceStaffId(staffId);
-      setShowGuidanceStaff(false);
-      setError("");
-      setErrorFields(prev => ({ ...prev, counselor: false }));
+      if (staffId !== guidanceStaffId) {
+        setGuidanceStaffId(staffId);
+        setShowGuidanceStaff(false);
+        
+        setError('');
+        clearErrorFields();
+      } else {
+        setShowGuidanceStaff(false);
+      }
     } catch (err) {
       setError("Error selecting counselor. Please try again.");
     }
@@ -683,14 +716,18 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
 
   const handleDateSelect = (selectedDate) => {
     try {
-      if (isDateBlocked(selectedDate)) {
-        setError("This date is blocked by the counselor and not available for appointments");
-        return;
-      }
-      
       const now = getCurrentPHTime();
       const selectedDateOnly = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
       const todayDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      const currentDateOnly = new Date(scheduledDate.getFullYear(), scheduledDate.getMonth(), scheduledDate.getDate());
+      const isSameDate = selectedDateOnly.getTime() === currentDateOnly.getTime();
+      
+      if (isDateBlocked(selectedDate)) {
+        setError("This date is blocked by the counselor and not available for appointments");
+        setErrorFields(prev => ({ ...prev, date: true }));
+        return;
+      }
       
       let newStartTime;
       
@@ -700,6 +737,7 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
         
         if (currentHour >= 16) {
           setError("Too late to book appointments today. Please select a future date.");
+          setErrorFields(prev => ({ ...prev, date: true }));
           return;
         }
         
@@ -721,10 +759,9 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
       
       setShowCalendar(false);
       
-      setErrorFields(prev => ({ ...prev, date: false }));
-      
-      if (error && (error.includes("date") || error.includes("weekend") || error.includes("available") || error.includes("blocked"))) {
-        setError("");
+      if (!isSameDate) {
+        setError('');
+        clearErrorFields();
       }
     } catch (err) {
       setError("Error selecting date. Please try again.");
@@ -736,6 +773,13 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
     if (!selectedTime) return;
     
     try {
+      const currentHour = scheduledDate.getHours();
+      const currentMinute = scheduledDate.getMinutes();
+      const selectedHour = selectedTime.getHours();
+      const selectedMinute = selectedTime.getMinutes();
+      
+      const timeChanged = currentHour !== selectedHour || currentMinute !== selectedMinute;
+      
       const newDate = new Date(scheduledDate);
       newDate.setHours(selectedTime.getHours(), selectedTime.getMinutes());
       setScheduledDate(newDate);
@@ -744,7 +788,13 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
       newEnd.setHours(Math.min(newDate.getHours() + 1, 17), 0, 0, 0);
       setEndDate(newEnd);
       
-      setErrorFields(prev => ({ ...prev, startTime: false }));
+      if (timeChanged) {
+        clearFieldError('startTime');
+        
+        if (errorFields.endTime) {
+          clearFieldError('endTime');
+        }
+      }
     } catch (err) {
       setError("Error setting start time. Please try again.");
     }
@@ -755,13 +805,26 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
     if (!selectedTime) return;
     
     try {
+      const currentHour = endDate.getHours();
+      const currentMinute = endDate.getMinutes();
+      const selectedHour = selectedTime.getHours();
+      const selectedMinute = selectedTime.getMinutes();
+      
+      const timeChanged = currentHour !== selectedHour || currentMinute !== selectedMinute;
+      
       const newDate = new Date(endDate);
       newDate.setHours(selectedTime.getHours(), selectedTime.getMinutes());
       if (newDate > scheduledDate) {
         setEndDate(newDate);
+        
+        if (timeChanged) {
+          clearFieldError('endTime');
+          
+          if (errorFields.startTime) {
+            clearFieldError('startTime');
+          }
+        }
       }
-      
-      setErrorFields(prev => ({ ...prev, endTime: false }));
     } catch (err) {
       setError("Error setting end time. Please try again.");
     }
@@ -810,7 +873,8 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
                   showsVerticalScrollIndicator={false}
                   keyboardShouldPersistTaps="handled"
                 >
-                  {error && (
+                  {/* Show error at top only if it's NOT a start/end time error */}
+                  {error && !errorFields.startTime && !errorFields.endTime && (
                     <View style={styles.errorContainer}>
                       <Ionicons name="alert-circle" size={20} color="#DC2626" />
                       <Text style={styles.errorText}>{error}</Text>
@@ -824,7 +888,9 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
                         styles.selectInput,
                         errorFields.appointmentType && styles.inputError
                       ]} 
-                      onPress={() => setShowAppointmentTypes(!showAppointmentTypes)} 
+                      onPress={() => {
+                        setShowAppointmentTypes(!showAppointmentTypes);
+                      }} 
                       disabled={isProcessing}
                       activeOpacity={0.7}
                     >
@@ -842,8 +908,7 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
                             onPress={() => { 
                               setAppointmentType(type); 
                               setShowAppointmentTypes(false); 
-                              if (error === "Please select an appointment type") setError("");
-                              setErrorFields(prev => ({ ...prev, appointmentType: false }));
+                              clearFieldError('appointmentType');
                             }}
                             activeOpacity={0.7}
                           >
@@ -864,7 +929,9 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
                         styles.selectInput,
                         errorFields.counselor && styles.inputError
                       ]} 
-                      onPress={() => setShowGuidanceStaff(!showGuidanceStaff)} 
+                      onPress={() => {
+                        setShowGuidanceStaff(!showGuidanceStaff);
+                      }} 
                       disabled={isProcessing || loadingStaff}
                       activeOpacity={0.7}
                     >
@@ -942,7 +1009,9 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
                         styles.dateTimeInput,
                         errorFields.date && styles.inputError
                       ]} 
-                      onPress={() => setShowCalendar(true)} 
+                      onPress={() => {
+                        setShowCalendar(true);
+                      }} 
                       disabled={isProcessing || isLoadingBlockedDates || !guidanceStaffId}
                       activeOpacity={0.7}
                     >
@@ -960,6 +1029,14 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
                     </View>
                   </View>
 
+                  {/* Show error above Start Time if it's a start/end time error */}
+                  {error && (errorFields.startTime || errorFields.endTime) && (
+                    <View style={styles.errorContainer}>
+                      <Ionicons name="alert-circle" size={20} color="#DC2626" />
+                      <Text style={styles.errorText}>{error}</Text>
+                    </View>
+                  )}
+
                   <View style={styles.fieldContainer}>
                     <Text style={styles.label}>Start Time <Text style={styles.required}>*</Text></Text>
                     <TouchableOpacity 
@@ -967,7 +1044,9 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
                         styles.dateTimeInput,
                         errorFields.startTime && styles.inputError
                       ]} 
-                      onPress={() => setShowStartTimePicker(true)} 
+                      onPress={() => {
+                        setShowStartTimePicker(true);
+                      }} 
                       disabled={isProcessing}
                       activeOpacity={0.7}
                     >
@@ -984,7 +1063,9 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
                         styles.dateTimeInput,
                         errorFields.endTime && styles.inputError
                       ]} 
-                      onPress={() => setShowEndTimePicker(true)} 
+                      onPress={() => {
+                        setShowEndTimePicker(true);
+                      }} 
                       disabled={isProcessing}
                       activeOpacity={0.7}
                     >
@@ -1001,7 +1082,7 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
                       value={notes} 
                       onChangeText={(text) => {
                         setNotes(text);
-                        setErrorFields(prev => ({ ...prev, notes: false }));
+                        clearFieldError('notes');
                       }} 
                       placeholder="Additional notes or concerns..." 
                       placeholderTextColor="#9CA3AF"
