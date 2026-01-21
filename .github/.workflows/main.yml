@@ -23,6 +23,6 @@ jobs:
       run: npm ci
       
     - name: Build
-      run: npm run build
-      
+      run: npx expo export
+    
     
