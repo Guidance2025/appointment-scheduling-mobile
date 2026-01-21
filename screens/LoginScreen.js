@@ -15,7 +15,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import LoginStyles from "../styles/LoginStyles";
 import GabayLogo from "../assets/Gabay.png";
-
+// check ci
 import { login } from "../service/auth";
 import { getFCMToken, registerFcmToken } from "../service/fcm";
 import { setupFCMHandlers } from "../service/notification";
