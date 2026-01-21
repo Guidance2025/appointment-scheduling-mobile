@@ -19,8 +19,10 @@ jobs:
       with:
         node-version: '22'
         cache: 'npm'
-        
     - name: Install packages
-      run: npm install
+      run: npm ci
+      
+    - name: Build
+      run: npm run build
       
     
