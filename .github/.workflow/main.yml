@@ -1,8 +1,10 @@
-name: Mobile CI/CD
+name: Mobile CI Pipeline
 
 on:
   push:
     branches: [ master ]
+  pull_request:
+    branches: [ master ]  
 
 jobs:
   simple-checks:
@@ -17,12 +19,10 @@ jobs:
       with:
         node-version: '22'
         cache: 'npm'
-        
     - name: Install packages
-      run: npm install
+      run: npm ci
       
-    - name: Check for errors
-      run: |
-        echo " Code downloaded successfully"
-        echo " Dependencies installed"
-        echo "  Checks completed"
+    - name: Build
+      run: npx expo export
+    
+    

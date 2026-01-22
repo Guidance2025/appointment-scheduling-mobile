@@ -243,7 +243,6 @@ const getDateBlockReason = (date) => {
             </TouchableOpacity>
           </View>
 
-          {/* Info Message */}
           {selectedDateInfo && (
             <View style={[
               calendarStyles.infoMessage,
