@@ -5,7 +5,10 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  Alert,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_BASE_URL } from "../constants/api";
 import styles from "../styles/MoodTrendStyles";
 
 const moods = [
@@ -32,13 +35,41 @@ export default function MoodTrend({ onNavigate }) {
   };
 
   const handleSave = async () => {
-    if (selectedMoods.length === 0) return;
+    if (selectedMoods.length === 0) {
+      Alert.alert("Error", "Please select at least one emotion.");
+      return;
+    }
     setSaving(true);
     try {
-      console.log("Saving moods:", { selectedMoods, dayNote });
+      const studentId = await AsyncStorage.getItem("studentId");
+      const jwtToken = await AsyncStorage.getItem("jwtToken");
+      if (!studentId || !jwtToken) {
+        Alert.alert("Error", "User not authenticated.");
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/moods`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${jwtToken}`,
+        },
+        body: JSON.stringify({
+          studentId: parseInt(studentId),
+          emotions: selectedMoods,
+          note: dayNote.trim() || null,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save mood entry.");
+      }
+
+      Alert.alert("Success", "Mood entry saved successfully!");
       onNavigate("dashboard");
-    } catch (err) {
-      console.error("Failed to save moods", err);
+    } catch (error) {
+      console.error("Save error:", error);
+      Alert.alert("Error", "Failed to save mood entry. Please try again.");
     } finally {
       setSaving(false);
     }
