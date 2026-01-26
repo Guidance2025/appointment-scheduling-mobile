@@ -28,14 +28,6 @@ export default function ExitInterview({
   const [submitting, setSubmitting] = useState(false);
   const [onSuccess, setOnSuccess] = useState(false);
 
-  const handleSuccessClose = () => {
-    setOnSuccess(false);
-    handleBack();
-    if (onAnswerSubmitted) {
-      onAnswerSubmitted();
-    }
-  };
-
   const handleSelectQuestion = (question) => {
     setSelectedQuestion(question);
     setAnswer("");
@@ -44,6 +36,14 @@ export default function ExitInterview({
   const handleBack = () => {
     setSelectedQuestion(null);
     setAnswer("");
+  };
+
+  const handleSuccessClose = () => {
+    setOnSuccess(false);
+    handleBack();
+    if (onAnswerSubmitted) {
+      onAnswerSubmitted();
+    }
   };
 
   const handleSubmitAnswer = async () => {
@@ -106,7 +106,11 @@ export default function ExitInterview({
     if (questions.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Ionicons name="checkmark-circle-outline" size={64} color="#CBD5E0" />
+          <Ionicons
+            name="checkmark-circle-outline"
+            size={64}
+            color="#CBD5E0"
+          />
           <Text style={styles.emptyTitle}>All Caught Up!</Text>
           <Text style={styles.emptySubtitle}>
             You've answered all available questions
@@ -115,11 +119,17 @@ export default function ExitInterview({
       );
     }
 
-    return questions.map((question) => (
+    const sortedQuestions = [...questions].sort((a, b) => {
+      const dateA = new Date(a.dateCreated);
+      const dateB = new Date(b.dateCreated);
+      return dateB - dateA; 
+    });
+
+    return sortedQuestions.map((question) => (
       <TouchableOpacity
         key={question.id}
         style={styles.questionCard}
-        onPress={() => handleQuestionSelect(question)}
+        onPress={() => handleSelectQuestion(question)}
         activeOpacity={0.7}
       >
         <View style={styles.questionCardHeader}>
