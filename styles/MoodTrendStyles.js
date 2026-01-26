@@ -52,6 +52,7 @@ export default StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 0,
   },
   moodSelected: {
     borderWidth: 3,
@@ -86,6 +87,13 @@ export default StyleSheet.create({
   textArea: {
     minHeight: 100,
     textAlignVertical: "top",
+  },
+  charCount: {
+    fontSize: 12,
+    color: "#64748B",
+    textAlign: "right",
+    marginTop: 4,
+    fontWeight: "500",
   },
   saveButton: {
     backgroundColor: "#48BB78",
