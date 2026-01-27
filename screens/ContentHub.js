@@ -12,14 +12,11 @@ import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import styles from "../styles/ContentHubStyles";
 import { API_BASE_URL } from "../constants/api";
-import CommentModal from "./modal/CommentModal";
 
 export default function ContentHub({ onNavigate }) {
   const [posts, setPosts] = useState([]);
   const [quote, setQuote] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [commentModalOpen, setCommentModalOpen] = useState(false);
-  const [activePostId, setActivePostId] = useState(null);
   const [activeTab, setActiveTab] = useState("announcements");
 
   const authHeaders = async () => {
@@ -31,13 +28,13 @@ export default function ContentHub({ onNavigate }) {
     if (!Array.isArray(data)) return [];
     
     return data.map((post) => ({
-      postId: post.post_id || post.id,
-      postContent: post.post_content || post.content,
-      categoryName: post.category_name || post.categoryName,
-      sectionName: post.section_name || post.sectionName,
-      postedBy: post.posted_by || post.postedBy || "Guidance Staff",
-      postedDate: post.posted_date || post.postedDate,
-      organizationName: post.organization_name || post.organizationName,
+      postId: post.POST_ID || post.post_id || post.id,
+      postContent: post.POST_CONTENT || post.post_content || post.content,
+      categoryName: post.CATEGORY_NAME || post.category_name || post.categoryName,
+      sectionName: post.SECTION_NAME || post.section_name || post.sectionName,
+      postedBy: post.POSTED_BY || post.posted_by || post.postedBy || "Guidance Staff",
+      postedDate: post.POSTED_DATE || post.posted_date || post.postedDate,
+      organizationName: post.ORGANIZATION || post.organization_name || post.organizationName,
     }));
   };
 
@@ -45,10 +42,10 @@ export default function ContentHub({ onNavigate }) {
     if (!quote || !Object.keys(quote).length) return null;
     
     return {
-      postId: quote.post_id || quote.id,
-      postContent: quote.post_content || quote.content,
-      postedDate: quote.posted_date || quote.postedDate,
-      sectionName: quote.section_name || quote.sectionName,
+      postId: quote.POST_ID || quote.post_id || quote.id,
+      postContent: quote.POST_CONTENT || quote.post_content || quote.content,
+      postedDate: quote.POSTED_DATE || quote.posted_date || quote.postedDate,
+      sectionName: quote.SECTION_NAME || quote.section_name || quote.sectionName,
     };
   };
 
@@ -155,17 +152,6 @@ export default function ContentHub({ onNavigate }) {
       {post.sectionName && (
         <Text style={styles.postSection}>📌 {post.sectionName}</Text>
       )}
-
-      <TouchableOpacity
-        style={styles.commentButton}
-        onPress={() => {
-          setActivePostId(post.postId);
-          setCommentModalOpen(true);
-        }}
-      >
-        <MaterialIcons name="chat-bubble-outline" size={16} color="#1B5E20" />
-        <Text style={styles.commentButtonText}>View Comments</Text>
-      </TouchableOpacity>
     </TouchableOpacity>
   );
 
@@ -295,12 +281,6 @@ export default function ContentHub({ onNavigate }) {
           </View>
         </ScrollView>
       )}
-
-      <CommentModal
-        postId={activePostId}
-        isOpen={commentModalOpen}
-        onClose={() => setCommentModalOpen(false)}
-      />
     </View>
   );
 }
