@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   View,
@@ -20,19 +20,56 @@ import { SuccessMessage } from './modal/message/SuccessMessage';
 export default function ExitInterview({
   visible,
   onClose,
-  questions,
   onAnswerSubmitted,
+  onNavigate,
 }) {
   const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [answer, setAnswer] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [onSuccess, setOnSuccess] = useState(false);
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleSuccessClose = () => {
-    setOnSuccess(false);
-    handleBack();
-    if (onAnswerSubmitted) {
-      onAnswerSubmitted();
+  useEffect(() => {
+    if (visible) {
+      fetchExitInterviewQuestions();
+    }
+  }, [visible]);
+
+  const fetchExitInterviewQuestions = async () => {
+    try {
+      setLoading(true);
+      const jwtToken = await AsyncStorage.getItem("jwtToken");
+      
+      if (!jwtToken) {
+        console.log("No JWT token found");
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/exit-interview/questions/unanswered`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${jwtToken}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch exit interview questions");
+      }
+
+      const data = await response.json();
+      console.log("Fetched exit interview questions:", data);
+      setQuestions(data);
+    } catch (err) {
+      console.error("Error fetching exit interview questions:", err);
+      Alert.alert("Error", "Failed to load questions. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -44,6 +81,22 @@ export default function ExitInterview({
   const handleBack = () => {
     setSelectedQuestion(null);
     setAnswer("");
+  };
+
+  const handleSuccessClose = () => {
+    setOnSuccess(false);
+    handleBack();
+    fetchExitInterviewQuestions(); // Refresh questions after answering
+    if (onAnswerSubmitted) {
+      onAnswerSubmitted();
+    }
+  };
+
+  const handleClose = () => {
+    onClose();
+    if (onNavigate) {
+      onNavigate('dashboard');
+    }
   };
 
   const handleSubmitAnswer = async () => {
@@ -84,7 +137,6 @@ export default function ExitInterview({
 
       setSubmitting(false);
       setOnSuccess(true);
-    
 
     } catch (error) {
       console.error("Error submitting answer:", error);
@@ -106,7 +158,11 @@ export default function ExitInterview({
     if (questions.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Ionicons name="checkmark-circle-outline" size={64} color="#CBD5E0" />
+          <Ionicons
+            name="checkmark-circle-outline"
+            size={64}
+            color="#CBD5E0"
+          />
           <Text style={styles.emptyTitle}>All Caught Up!</Text>
           <Text style={styles.emptySubtitle}>
             You've answered all available questions
@@ -115,11 +171,17 @@ export default function ExitInterview({
       );
     }
 
-    return questions.map((question) => (
+    const sortedQuestions = [...questions].sort((a, b) => {
+      const dateA = new Date(a.dateCreated);
+      const dateB = new Date(b.dateCreated);
+      return dateB - dateA; 
+    });
+
+    return sortedQuestions.map((question) => (
       <TouchableOpacity
         key={question.id}
         style={styles.questionCard}
-        onPress={() => handleQuestionSelect(question)}
+        onPress={() => handleSelectQuestion(question)}
         activeOpacity={0.7}
       >
         <View style={styles.questionCardHeader}>
@@ -268,7 +330,7 @@ export default function ExitInterview({
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Exit Interview</Text>
               <TouchableOpacity
-                onPress={onClose}
+                onPress={handleClose}
                 style={styles.closeButton}
                 activeOpacity={0.7}
               >
@@ -281,7 +343,14 @@ export default function ExitInterview({
               contentContainerStyle={styles.questionsContent}
               showsVerticalScrollIndicator={false}
             >
-              {renderQuestionsList()}
+              {loading ? (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 }}>
+                  <ActivityIndicator size="large" color="#1B5E20" />
+                  <Text style={{ marginTop: 10, color: '#64748B' }}>Loading questions...</Text>
+                </View>
+              ) : (
+                renderQuestionsList()
+              )}
             </ScrollView>
           </>
         )}

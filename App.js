@@ -80,7 +80,12 @@ export default function App() {
       )}
 
       {screen === "exitInterview" && (
-        <ExitInterview questions={[]} onNavigate={(t) => navigate(t)} />
+        <ExitInterview 
+          visible={true} 
+          onClose={() => setScreen("dashboard")} 
+          questions={[]} 
+          onNavigate={(t) => navigate(t)} 
+        />
       )}
 
       {screen === "moodTrend" && (
