@@ -119,10 +119,6 @@ export default function ContentHub({ onNavigate }) {
     <TouchableOpacity
       key={post.postId}
       style={styles.postItem}
-      onPress={() => {
-        setActivePostId(post.postId);
-        setCommentModalOpen(true);
-      }}
       activeOpacity={0.7}
     >
       <View style={styles.postHeader}>

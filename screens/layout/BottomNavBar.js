@@ -81,7 +81,6 @@ export default function BottomNavBar({ activeScreen, onNavigate }) {
         </Text>
       </TouchableOpacity>
 
-      {/* Popover menu */}
       {menuOpen && (
         <>
           <TouchableOpacity
@@ -90,7 +89,6 @@ export default function BottomNavBar({ activeScreen, onNavigate }) {
             onPress={() => setMenuOpen(false)}
           />
           <View style={styles.menuSheet}>
-            {/* Exit Interview */}
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => go('exitInterview')}
@@ -137,7 +135,7 @@ export default function BottomNavBar({ activeScreen, onNavigate }) {
               </View>
               <View style={styles.menuTextContainer}>
                 <Text style={styles.menuItemText}>Content Hub</Text>
-                <Text style={styles.menuItemSubtext}>Resources & articles</Text>
+                <Text style={styles.menuItemSubtext}>Announcements</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#9ca3af" />
             </TouchableOpacity>
