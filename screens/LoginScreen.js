@@ -240,7 +240,7 @@ const LoginScreen = ({ onNavigate }) => {
               )}
               
               <View style={LoginStyles.formContainer}>
-                <Text style={LoginStyles.label}>Student Number</Text>
+                <Text style={LoginStyles.label}>Username</Text>
                 <TextInput
                   style={[
                     LoginStyles.textField,
@@ -254,7 +254,7 @@ const LoginScreen = ({ onNavigate }) => {
                   }}
                   onFocus={() => setUsernameFocused(true)}
                   onBlur={() => setUsernameFocused(false)}
-                  placeholder="Student ID"
+                  placeholder="Username"
                   placeholderTextColor="#9ca3af"
                   autoCapitalize="none"
                   autoCorrect={false}
