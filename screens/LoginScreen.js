@@ -54,14 +54,13 @@ const LoginScreen = ({ onNavigate }) => {
           const now = Date.now();
           
           if (lockTime > now) {
-          
             setIsLocked(true);
             setLockTimer(lockTime);
             setError("Your account has been locked due to 5 failed login attempts. Please wait 15 minutes.");
-            console.log(" Account is locked until:", new Date(lockTime));
+            console.log("🔒 Account is locked until:", new Date(lockTime));
           } else {
             await AsyncStorage.removeItem('accountLockTime');
-            console.log(" Lock time expired, clearing storage");
+            console.log("✅ Lock time expired, clearing storage");
           }
         }
       } catch (err) {
@@ -106,7 +105,6 @@ const LoginScreen = ({ onNavigate }) => {
       return;
     }
     
-   
     if (isLocked) {
       Alert.alert(
         "Account Locked",
@@ -126,27 +124,48 @@ const LoginScreen = ({ onNavigate }) => {
       await AsyncStorage.removeItem('accountLockTime');
       console.log(" Login successful, cleared lock state");
       
-      
-      let tokenToRegister = fcmToken || (await getFCMToken(setFcmToken, setTokenStatus, setTokenError));
     
-      if (tokenToRegister) {
-        await registerFcmToken(userId, tokenToRegister);
+      try {
+        let tokenToRegister = fcmToken;
+        
+        if (!tokenToRegister) {
+          console.log(" FCM token not available, requesting new token...");
+          tokenToRegister = await getFCMToken(setFcmToken, setTokenStatus, setTokenError);
+        }
+        
+        if (tokenToRegister) {
+          console.log("📱 Registering FCM token for user:", userId);
+          await registerFcmToken(userId, tokenToRegister);
+          console.log(" FCM token registered successfully");
+        } else {
+          console.error(" Failed to obtain FCM token");
+          Alert.alert(
+            "Notification Setup",
+            "Unable to set up notifications. You may not receive push notifications.",
+            [{ text: "OK" }]
+          );
+        }
+      } catch (fcmError) {
+        console.error(" FCM token registration failed:", fcmError);
+        Alert.alert(
+          "Notification Setup",
+          "Failed to set up notifications. You may not receive push notifications.",
+          [{ text: "OK" }]
+        );
       }
 
       onNavigate("dashboard");
       
     } catch (err) {
-      
       let errorMessage = "An error occurred. Please try again.";
       let accountLocked = false;
       
       const errorMsg = (err.message || "").toUpperCase();
       
       if (err.status === 423) {
-      
         errorMessage = "Your account has been locked due to 5 failed login attempts. Please wait 15 minutes.";
         accountLocked = true;
-        console.log(" Account locked detected via status 423");
+        console.log("Account locked detected via status 423");
       }
       else if (
         errorMsg.includes("LOCKED") || 
@@ -188,10 +207,9 @@ const LoginScreen = ({ onNavigate }) => {
       }
       
       setError(errorMessage);
-      
 
       if (accountLocked && !isLocked) {
-        const unlockTime = Date.now() + (15 * 60 * 1000); 
+        const unlockTime = Date.now() + (15 * 60 * 1000);
         await AsyncStorage.setItem('accountLockTime', unlockTime.toString());
         setLockTimer(unlockTime);
         setIsLocked(true);
@@ -250,7 +268,7 @@ const LoginScreen = ({ onNavigate }) => {
                   value={username}
                   onChangeText={(text) => {
                     setUsername(text);
-                    if (!isLocked) setError(""); 
+                    if (!isLocked) setError("");
                   }}
                   onFocus={() => setUsernameFocused(true)}
                   onBlur={() => setUsernameFocused(false)}
@@ -272,7 +290,7 @@ const LoginScreen = ({ onNavigate }) => {
                   value={password}
                   onChangeText={(text) => {
                     setPassword(text);
-                    if (!isLocked) setError(""); 
+                    if (!isLocked) setError("");
                   }}
                   onFocus={() => setPasswordFocused(true)}
                   onBlur={() => setPasswordFocused(false)}
