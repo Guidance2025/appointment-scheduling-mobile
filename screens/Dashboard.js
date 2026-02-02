@@ -11,6 +11,7 @@ import {
   RefreshControl,
   AppState,
   Alert,
+  Dimensions,
 } from "react-native";
 import { Ionicons , MaterialIcons } from "@expo/vector-icons";
 import styles from "../styles/DashboardStyles";
@@ -24,6 +25,7 @@ import messaging from "@react-native-firebase/messaging";
 import { formatAppointmentDateTime, getCurrentPHTime, parseUTCToPH } from "../utils/dateTime";
 
 const counselingLogo = require("../assets/Gabay.png");
+const { width } = Dimensions.get('window');
 
 export default function Dashboard({ onNavigate }) {
   const [unread, setUnread] = useState(0);
@@ -39,6 +41,32 @@ export default function Dashboard({ onNavigate }) {
   const [assessmentQuestions, setAssessmentQuestions] = useState([]);
   const [unansweredCount, setUnansweredCount] = useState(0);
   const [statuses] = useState(["PENDING", "SCHEDULED", "ONGOING", "RESCHEDULE_PENDING"]);
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
+
+  // Quick access cards data
+  const quickAccessCards = [
+    {
+      id: 'exitInterview',
+      title: 'Exit Interview',
+      subtitle: 'Complete your interview',
+      icon: 'clipboard-outline',
+      navigateTo: 'exitInterview'
+    },
+    {
+      id: 'moodTrend',
+      title: 'Mood Trend',
+      subtitle: 'Track your wellness',
+      icon: 'pulse-outline',
+      navigateTo: 'moodTrend'
+    },
+    {
+      id: 'contentHub',
+      title: 'Content Hub',
+      subtitle: 'Announcements & Events',
+      icon: 'newspaper-outline',
+      navigateTo: 'contentHub'
+    }
+  ];
 
   const canRescheduleAppointment = (appointment) => {
     if (!appointment) {
@@ -385,6 +413,13 @@ export default function Dashboard({ onNavigate }) {
     fetchAppointments();
   };
 
+  const handleCarouselScroll = (event) => {
+    const contentOffsetX = event.nativeEvent.contentOffset.x;
+    const cardWidth = width - 40; // Match the card width + margin
+    const index = Math.round(contentOffsetX / cardWidth);
+    setActiveCardIndex(index);
+  };
+
   useEffect(() => {
     fetchUnreadCount();
     fetchAppointments();
@@ -482,6 +517,56 @@ export default function Dashboard({ onNavigate }) {
                   <Ionicons name="chevron-forward" size={18} color="#64748B" />
                 </TouchableOpacity>
               )}
+
+              {/* Quick Access Carousel */}
+              <View style={styles.carouselContainer}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.quickAccessCarousel}
+                  decelerationRate="fast"
+                  snapToInterval={width - 40}
+                  snapToAlignment="center"
+                  onScroll={handleCarouselScroll}
+                  scrollEventThrottle={16}
+                  pagingEnabled={false}
+                >
+                  {quickAccessCards.map((card) => (
+                    <TouchableOpacity
+                      key={card.id}
+                      style={styles.quickAccessCard}
+                      onPress={() => handleNavigation(card.navigateTo)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.quickAccessIcon}>
+                        <Ionicons 
+                          name={card.icon} 
+                          size={20} 
+                          color="#16a34a" 
+                        />
+                      </View>
+                      <View style={styles.quickAccessTextContainer}>
+                        <Text style={styles.quickAccessCardTitle}>{card.title}</Text>
+                        <Text style={styles.quickAccessCardSubtitle}>{card.subtitle}</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+                
+                {/* Swipe Indicator Dots */}
+                <View style={styles.indicatorContainer}>
+                  {quickAccessCards.map((_, index) => (
+                    <View
+                      key={index}
+                      style={[
+                        styles.indicatorDot,
+                        activeCardIndex === index && styles.indicatorDotActive
+                      ]}
+                    />
+                  ))}
+                </View>
+              </View>
 
               {appointments.length === 0 ? (
                 <View style={styles.emptyAppointmentsContainer}>
@@ -606,16 +691,6 @@ export default function Dashboard({ onNavigate }) {
           }}
           onSuccess={handleRescheduleSuccess}
           appointment={selectedAppointment}
-        />
-
-        <SelfAssessmentModal
-          visible={showAssessmentModal}
-          onClose={() => setShowAssessmentModal(false)}
-          questions={assessmentQuestions}
-          onAnswerSubmitted={() => {
-            fetchAssessmentQuestions();
-            setShowAssessmentModal(false);
-          }}
         />
 
         <SelfAssessmentModal

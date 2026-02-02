@@ -162,7 +162,7 @@ export default function BookAppointmentModal({ visible, onClose, onSuccess }) {
       if (!userId) return;
 
       const response = await fetch(
-        `${API_BASE_URL}/student/appointments/${userId}`,
+        `${API_BASE_URL}/student/appointment/${userId}`,
         {
           method: "GET",
           headers: {
