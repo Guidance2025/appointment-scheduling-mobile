@@ -83,6 +83,76 @@ export default StyleSheet.create({
     letterSpacing: 0.3,
   },
 
+  // Quick Access Carousel Styles
+  carouselContainer: {
+    marginBottom: 16,
+  },
+  quickAccessCarousel: {
+    paddingRight: 20,
+  },
+  quickAccessCard: {
+    width: width - 40, // Same width as assessment button
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: 0,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  quickAccessIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: "#f0fdf4",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  quickAccessTextContainer: {
+    flex: 1,
+  },
+  quickAccessCardTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#111827",
+    marginBottom: 2,
+    letterSpacing: 0.2,
+  },
+  quickAccessCardSubtitle: {
+    fontSize: 12,
+    color: "#6b7280",
+    fontWeight: "400",
+  },
+
+  // Swipe Indicator Dots
+  indicatorContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingTop: 12,
+    gap: 6,
+  },
+  indicatorDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#d1d5db",
+  },
+  indicatorDotActive: {
+    backgroundColor: "#16a34a",
+    width: 20,
+  },
+
   cardActions: {
     marginTop: 12,
     paddingTop: 12,
@@ -200,6 +270,7 @@ export default StyleSheet.create({
   appointmentsListContent: {
     paddingTop: 12,
     paddingBottom: 180,
+    gap: 16,
   },
 
   assessmentButton: {
