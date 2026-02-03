@@ -1,5 +1,3 @@
-// utils/dateTime.js
-
 export const getCurrentPHTime = () => {
   return new Date();
 };
@@ -9,8 +7,6 @@ export const parseUTCToPH = (utcString) => {
   try {
     let dateString = utcString;
     
-    // Backend sends timestamps without 'Z' but they ARE in UTC
-    // If the string doesn't have a timezone indicator, append 'Z' to force UTC parsing
     if (!dateString.includes('Z') && !dateString.includes('+') && !dateString.match(/-\d{2}:\d{2}$/)) {
       dateString = dateString + 'Z';
     }
@@ -89,23 +85,12 @@ export const formatAppointmentDateTime = (scheduledDateUTC, endDateUTC) => {
   return { date, timeRange: `${startTime} - ${endTime}` };
 };
 
-// ✅ FIXED: Convert RN DatePicker output to backend-expected format
-// ✅ CORRECTED: Convert RN DatePicker output to backend-expected format
 export const convertLocalToUTCISO = (localDate) => {
   if (!(localDate instanceof Date)) localDate = new Date(localDate);
   
-  // React Native DateTimePicker quirk:
-  // - User picks "8:30 AM PH" on Jan 7
-  // - RN stores it as: 2026-01-07T00:30:00.000Z (midnight UTC, displays as 8:30 AM locally)
-  // - We need to send: "2026-01-07T08:30:00" (8:30 AM PH local time)
-  // - Backend will interpret this as PH time and convert to UTC (subtracting 8 hours back to 00:30 UTC)
-  
-  // The visual display time is what the user intended
-  // So we need to ADD 8 hours to the UTC time to get the PH local time value
-  const phOffset = 8 * 60 * 60 * 1000; // 8 hours in milliseconds
+  const phOffset = 8 * 60 * 60 * 1000; 
   const phDate = new Date(localDate.getTime() + phOffset);
   
-  // Extract components from the adjusted date
   const year = phDate.getUTCFullYear();
   const month = String(phDate.getUTCMonth() + 1).padStart(2, '0');
   const day = String(phDate.getUTCDate()).padStart(2, '0');
@@ -113,7 +98,6 @@ export const convertLocalToUTCISO = (localDate) => {
   const minutes = String(phDate.getUTCMinutes()).padStart(2, '0');
   const seconds = String(phDate.getUTCSeconds()).padStart(2, '0');
   
-  // Return as ISO string WITHOUT 'Z' (backend interprets as PH local time)
   return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
 };
 
@@ -139,4 +123,16 @@ export const formatTimePH = (date) => {
     minute: "2-digit", 
     hour12: true 
   });
+};
+
+export const formatDateTimeLong = (utcString) => {
+  const date = parseUTCToPH(utcString);
+  if (!date) return "";
+  const datePart = date.toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  return `${datePart}`;
 };

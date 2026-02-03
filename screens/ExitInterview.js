@@ -16,6 +16,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "../constants/api";
 import styles from "../styles/ExitInterviewStyles";
 import { SuccessMessage } from './modal/message/SuccessMessage';
+import { formatDatePH, formatDateTimeLong } from "../utils/dateTime";
 
 export default function ExitInterview({
   visible,
@@ -86,7 +87,7 @@ export default function ExitInterview({
   const handleSuccessClose = () => {
     setOnSuccess(false);
     handleBack();
-    fetchExitInterviewQuestions(); // Refresh questions after answering
+    fetchExitInterviewQuestions(); 
     if (onAnswerSubmitted) {
       onAnswerSubmitted();
     }
@@ -242,12 +243,7 @@ export default function ExitInterview({
             <View style={styles.questionDetailMeta}>
               <Ionicons name="calendar-outline" size={14} color="#64748B" />
               <Text style={styles.questionDetailMetaText}>
-                {new Date(selectedQuestion?.dateCreated).toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  }
-                )}
+                {formatDateTimeLong(selectedQuestion?.dateCreated)}
               </Text>
             </View>
           </View>
