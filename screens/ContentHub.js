@@ -50,51 +50,49 @@ export default function ContentHub({ onNavigate }) {
   };
 
   const loadData = async () => {
-    setLoading(true);
-    try {
-      const headers = await authHeaders();
-      
-      // Fetch posts from correct endpoint
-      const resPosts = await fetch(`${API_BASE_URL}/api/posts?limit=20`, { 
-        headers,
-        method: "GET",
-      });
-      
-      // Fetch quote of the day from correct endpoint
-      const resQuote = await fetch(`${API_BASE_URL}/api/posts/quote-of-the-day`, { 
-        headers,
-        method: "GET",
-      });
+  setLoading(true);
+  try {
+    const headers = await authHeaders();
+    
+    const resPosts = await fetch(`${API_BASE_URL}/api/posts/student`, { 
+      headers,
+      method: "GET",
+    });
+    
+    const resQuote = await fetch(`${API_BASE_URL}/api/posts/quote-of-the-day`, { 
+      headers,
+      method: "GET",
+    });
 
-      if (!resPosts.ok) {
-        console.error("Failed to fetch posts:", resPosts.status, resPosts.statusText);
-        setPosts([]);
-      } else {
-        const postsData = await resPosts.json();
-        console.log("Raw posts data:", postsData);
-        const normalized = normalizePosts(postsData);
-        console.log("Normalized posts:", normalized);
-        setPosts(normalized);
-      }
-
-      if (resQuote.ok) {
-        const quoteData = await resQuote.json();
-        console.log("Raw quote data:", quoteData);
-        const normalized = normalizeQuote(quoteData);
-        console.log("Normalized quote:", normalized);
-        setQuote(normalized);
-      } else {
-        console.warn("Failed to fetch quote:", resQuote.status);
-        setQuote(null);
-      }
-    } catch (err) {
-      console.error("Failed to load ContentHub:", err);
+    if (!resPosts.ok) {
+      console.error("Failed to fetch posts:", resPosts.status, resPosts.statusText);
       setPosts([]);
-      setQuote(null);
-    } finally {
-      setLoading(false);
+    } else {
+      const postsData = await resPosts.json();
+      console.log("Raw posts data:", postsData);
+      const normalized = normalizePosts(postsData);
+      console.log("Normalized posts:", normalized);
+      setPosts(normalized);
     }
-  };
+
+    if (resQuote.ok) {
+      const quoteData = await resQuote.json();
+      console.log("Raw quote data:", quoteData);
+      const normalized = normalizeQuote(quoteData);
+      console.log("Normalized quote:", normalized);
+      setQuote(normalized);
+    } else {
+      console.warn("Failed to fetch quote:", resQuote.status);
+      setQuote(null);
+    }
+  } catch (err) {
+    console.error("Failed to load ContentHub:", err);
+    setPosts([]);
+    setQuote(null);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleClose = () => {
     onNavigate("dashboard");
@@ -104,7 +102,6 @@ export default function ContentHub({ onNavigate }) {
     loadData();
   }, []);
 
-  // Filter posts by category
   const announcementPosts = posts.filter(p =>
     p.categoryName?.toLowerCase() === "announcement" ||
     p.categoryName?.toLowerCase() === "announcements"
@@ -184,7 +181,6 @@ export default function ContentHub({ onNavigate }) {
 
   return (
     <View style={styles.modalContainer}>
-      {/* Header - Same style as ExitInterview */}
       <View style={styles.modalHeader}>
         <Text style={styles.modalTitle}>Content Hub</Text>
         <TouchableOpacity
@@ -222,7 +218,6 @@ export default function ContentHub({ onNavigate }) {
             </View>
           )}
 
-          {/* Tabs for Announcements and Events */}
           <View style={styles.tabsContainer}>
             <TouchableOpacity
               style={[
@@ -271,7 +266,6 @@ export default function ContentHub({ onNavigate }) {
             </TouchableOpacity>
           </View>
 
-          {/* Tab Content */}
           <View style={styles.postsContainer}>
             {renderTabContent()}
           </View>
