@@ -8,6 +8,10 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "scheme": "appointmentscheduling",
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "url": "https://u.expo.dev/3d2bf45e-6b51-42c3-9d5d-8171bbd5701d"
+    },
     "splash": {
       "image": "./assets/Gabay.png",
       "resizeMode": "contain",
@@ -20,7 +24,8 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.neonael.appointmentschedulingmobile",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/Gabay.png"
