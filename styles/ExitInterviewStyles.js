@@ -1,286 +1,367 @@
-import { StyleSheet, Platform } from "react-native";
+import React, { useState, useCallback } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_BASE_URL } from "../../constants/api";
+import styles from "./ExitInterviewStyles";
 
-export default StyleSheet.create({
-  // Outer container for the modal
-  modalContainer: {
-    flex: 1,
-    backgroundColor: "#F8FAFC",
-  },
+// ─── View modes ──────────────────────────────────────────────────────────────
+const VIEW_LIST   = "list";
+const VIEW_ANSWER = "answer";
 
-  // Header bar with title and close button
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === "android" ? 40 : 60,
-    paddingBottom: 20,
-    backgroundColor: "#E8F5E9",
-    borderBottomWidth: 1,
-    borderBottomColor: "#D1FAE5",
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#1B5E20",
-    letterSpacing: 0.5,
-  },
-  closeButton: {
-    padding: 4,
-  },
+// ─── Component ───────────────────────────────────────────────────────────────
+const ExitInterviewScreen = ({ navigation }) => {
+  const [view, setView]             = useState(VIEW_LIST);
+  const [questions, setQuestions]   = useState([]);
+  const [selected, setSelected]     = useState(null);   // currently-open question
+  const [answer, setAnswer]         = useState("");
+  const [loading, setLoading]       = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Container for questions list
-  questionsContainer: {
-    flex: 1,
-  },
-  questionsContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
+  // ─────────────────────────────────────────────────────────────────────────
+  // Helpers
+  // ─────────────────────────────────────────────────────────────────────────
 
-  // Individual question card styling
-  questionCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  questionCardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  questionIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#DCFCE7",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  questionCardInfo: {
-    flex: 1,
-    marginRight: 8,
-  },
-  questionCardTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#1E293B",
-    marginBottom: 4,
-    letterSpacing: 0.2,
-  },
-  questionCardMeta: {
-    fontSize: 12,
-    color: "#64748B",
-    fontWeight: "500",
-  },
+  const getAuthHeader = async () => {
+    const token = await AsyncStorage.getItem("jwtToken");
+    if (!token) return null;
+    return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  };
 
-  emptyContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 80,
-    paddingHorizontal: 40,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#334155",
-    marginTop: 16,
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: "#64748B",
-    textAlign: "center",
-    lineHeight: 20,
-    fontWeight: "500",
-  },
+  // ─────────────────────────────────────────────────────────────────────────
+  // Fetch unanswered questions (visibility-filtered by backend)
+  // The endpoint /questions/unanswered returns only questions this student
+  // is allowed to see AND has not yet answered.
+  // ─────────────────────────────────────────────────────────────────────────
 
-  answerContainer: {
-    flex: 1,
-    backgroundColor: "#F8FAFC",
-  },
+  const fetchQuestions = useCallback(async (showRefresh = false) => {
+    try {
+      showRefresh ? setRefreshing(true) : setLoading(true);
+      const headers = await getAuthHeader();
+      if (!headers) {
+        Alert.alert("Session Expired", "Please log in again.");
+        return;
+      }
 
-  // Header with back and title
-  answerHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === "android" ? 40 : 60,
-    paddingBottom: 20,
-    backgroundColor: "#E8F5E9",
-    borderBottomWidth: 1,
-    borderBottomColor: "#D1FAE5",
-  },
-  backButton: {
-    marginRight: 12,
-    padding: 4,
-  },
-  answerHeaderTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#1B5E20",
-    letterSpacing: 0.3,
-  },
+      const res = await fetch(`${API_BASE_URL}/exit-interview/questions/unanswered`, {
+        method: "GET",
+        headers,
+      });
 
-  // Scrollable content inside answer view
-  answerContent: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
+      if (res.status === 401) {
+        Alert.alert("Session Expired", "Please log in again.");
+        return;
+      }
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(text || `HTTP ${res.status}`);
+      }
 
-  // Question details card
-  questionDetailCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  questionDetailLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#48BB78",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 8,
-  },
-  questionDetailText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1E293B",
-    lineHeight: 24,
-    marginBottom: 16,
-  },
-  questionDetailMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  questionDetailMetaText: {
-    fontSize: 13,
-    color: "#64748B",
-    marginLeft: 6,
-    fontWeight: "500",
-  },
+      const data = await res.json();
+      setQuestions(data);
+    } catch (error) {
+      console.error("fetchQuestions error:", error);
+      Alert.alert("Error", "Could not load exit interview questions. Please try again.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
-  // Answer input styling
-  answerInputContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  answerInputLabel: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#334155",
-    marginBottom: 12,
-    letterSpacing: 0.3,
-  },
-  answerInput: {
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 15,
-    color: "#1E293B",
-    minHeight: 160,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    fontWeight: "500",
-    lineHeight: 22,
-  },
-  answerInputDisabled: {
-    backgroundColor: "#F1F5F9",
-    color: "#64748B",
-  },
-  answerInputHint: {
-    fontSize: 12,
-    color: "#64748B",
-    marginTop: 8,
-    fontStyle: "italic",
-    fontWeight: "500",
-  },
+  // Auto-refresh when screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchQuestions();
+      return () => {};
+    }, [fetchQuestions])
+  );
 
-  answerActions: {
-    flexDirection: "row",
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    backgroundColor: "#fff",
-    borderTopWidth: 1,
-    borderTopColor: "#E2E8F0",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: 16,
-    borderRadius: 12,
-    backgroundColor: "#F1F5F9",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#475569",
-    letterSpacing: 0.3,
-  },
-  submitButton: {
-    flex: 2,
-    paddingVertical: 16,
-    borderRadius: 12,
-    backgroundColor: "#48BB78",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#48BB78",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  submitButtonDisabled: {
-    backgroundColor: "#94A3B8",
-  },
-  submitButtonText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#fff",
-    marginLeft: 8,
-    letterSpacing: 0.3,
-  },
-});
+  // ─────────────────────────────────────────────────────────────────────────
+  // Submit answer
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const handleSubmit = async () => {
+    if (!answer.trim()) {
+      Alert.alert("Empty Answer", "Please write your answer before submitting.");
+      return;
+    }
+
+    Alert.alert(
+      "Submit Answer",
+      "Are you sure you want to submit this answer? This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Submit",
+          style: "default",
+          onPress: async () => {
+            try {
+              setSubmitting(true);
+              const headers = await getAuthHeader();
+              if (!headers) {
+                Alert.alert("Session Expired", "Please log in again.");
+                return;
+              }
+
+              const payload = {
+                questionId: selected.id,
+                responseText: answer.trim(),
+              };
+
+              const res = await fetch(`${API_BASE_URL}/exit-interview/submit-answer`, {
+                method: "POST",
+                headers,
+                body: JSON.stringify(payload),
+              });
+
+              if (!res.ok) {
+                const errText = await res.text().catch(() => "");
+                throw new Error(errText || `HTTP ${res.status}`);
+              }
+
+              Alert.alert(
+                "✓ Submitted",
+                "Your answer has been submitted successfully!",
+                [{ text: "OK", onPress: () => goBackToList(true) }]
+              );
+            } catch (error) {
+              console.error("submit error:", error);
+              const msg = error.message?.toLowerCase();
+              if (msg?.includes("already answered")) {
+                Alert.alert("Already Answered", "You have already answered this question.", [
+                  { text: "OK", onPress: () => goBackToList(true) },
+                ]);
+              } else {
+                Alert.alert("Submission Failed", "Could not submit your answer. Please try again.");
+              }
+            } finally {
+              setSubmitting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Navigation helpers
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const openQuestion = (question) => {
+    setSelected(question);
+    setAnswer("");
+    setView(VIEW_ANSWER);
+  };
+
+  const goBackToList = (refresh = false) => {
+    setView(VIEW_LIST);
+    setSelected(null);
+    setAnswer("");
+    if (refresh) fetchQuestions();
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "Unknown date";
+    try {
+      return new Date(dateStr).toLocaleDateString("en-PH", {
+        year: "numeric", month: "long", day: "numeric",
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Render: Question List
+  // ─────────────────────────────────────────────────────────────────────────
+
+  if (view === VIEW_LIST) {
+    return (
+      <View style={styles.modalContainer}>
+
+        {/* Header */}
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>Exit Interview</Text>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => navigation?.goBack?.()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="close" size={28} color="#1B5E20" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Body */}
+        {loading ? (
+          <View style={styles.emptyContainer}>
+            <ActivityIndicator size="large" color="#48BB78" />
+            <Text style={[styles.emptySubtitle, { marginTop: 12 }]}>Loading questions…</Text>
+          </View>
+        ) : (
+          <FlatList
+            style={styles.questionsContainer}
+            contentContainerStyle={[
+              styles.questionsContent,
+              questions.length === 0 && { flex: 1 },
+            ]}
+            data={questions}
+            keyExtractor={(item) => String(item.id)}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => fetchQuestions(true)}
+                colors={["#48BB78"]}
+                tintColor="#48BB78"
+              />
+            }
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Ionicons name="checkmark-circle-outline" size={64} color="#86EFAC" />
+                <Text style={styles.emptyTitle}>All Caught Up!</Text>
+                <Text style={styles.emptySubtitle}>
+                  You have no pending exit interview questions.{"\n"}
+                  Pull down to refresh.
+                </Text>
+              </View>
+            }
+            renderItem={({ item, index }) => (
+              <TouchableOpacity
+                style={styles.questionCard}
+                onPress={() => openQuestion(item)}
+                activeOpacity={0.75}
+              >
+                <View style={styles.questionCardHeader}>
+                  <View style={styles.questionIconContainer}>
+                    <Ionicons name="document-text-outline" size={20} color="#16a34a" />
+                  </View>
+                  <View style={styles.questionCardInfo}>
+                    <Text style={styles.questionCardTitle} numberOfLines={2}>
+                      {item.questionText}
+                    </Text>
+                    <Text style={styles.questionCardMeta}>
+                      Posted by {item.guidanceStaff?.person?.firstName ?? ""}{" "}
+                      {item.guidanceStaff?.person?.lastName ?? ""} · {formatDate(item.dateCreated)}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+                </View>
+              </TouchableOpacity>
+            )}
+          />
+        )}
+      </View>
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Render: Answer Screen
+  // ─────────────────────────────────────────────────────────────────────────
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.answerContainer}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      {/* Header */}
+      <View style={styles.answerHeader}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => goBackToList(false)}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="arrow-back" size={26} color="#1B5E20" />
+        </TouchableOpacity>
+        <Text style={styles.answerHeaderTitle}>Exit Interview</Text>
+      </View>
+
+      {/* Scrollable content */}
+      <ScrollView
+        style={styles.answerContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Question card */}
+        <View style={styles.questionDetailCard}>
+          <Text style={styles.questionDetailLabel}>Question</Text>
+          <Text style={styles.questionDetailText}>{selected?.questionText}</Text>
+
+          <View style={styles.questionDetailMeta}>
+            <Ionicons name="person-outline" size={14} color="#64748B" />
+            <Text style={styles.questionDetailMetaText}>
+              {selected?.guidanceStaff?.person?.firstName ?? ""}{" "}
+              {selected?.guidanceStaff?.person?.lastName ?? ""}
+            </Text>
+          </View>
+
+          <View style={styles.questionDetailMeta}>
+            <Ionicons name="calendar-outline" size={14} color="#64748B" />
+            <Text style={styles.questionDetailMetaText}>
+              {formatDate(selected?.dateCreated)}
+            </Text>
+          </View>
+        </View>
+
+        {/* Answer input */}
+        <View style={styles.answerInputContainer}>
+          <Text style={styles.answerInputLabel}>Your Answer</Text>
+          <TextInput
+            style={styles.answerInput}
+            placeholder="Write your honest answer here…"
+            placeholderTextColor="#94A3B8"
+            multiline
+            textAlignVertical="top"
+            value={answer}
+            onChangeText={setAnswer}
+            editable={!submitting}
+            maxLength={500}
+          />
+          <Text style={styles.answerInputHint}>
+            {answer.length}/500 characters · Be honest and thoughtful in your response
+          </Text>
+        </View>
+      </ScrollView>
+
+      {/* Action buttons */}
+      <View style={styles.answerActions}>
+        <TouchableOpacity
+          style={styles.cancelButton}
+          onPress={() => goBackToList(false)}
+          disabled={submitting}
+        >
+          <Text style={styles.cancelButtonText}>Back</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.submitButton, (submitting || !answer.trim()) && styles.submitButtonDisabled]}
+          onPress={handleSubmit}
+          disabled={submitting || !answer.trim()}
+        >
+          {submitting ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Ionicons name="send-outline" size={18} color="#fff" />
+          )}
+          <Text style={styles.submitButtonText}>
+            {submitting ? "Submitting…" : "Submit Answer"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
+  );
+};
+
+export default ExitInterviewScreen;
