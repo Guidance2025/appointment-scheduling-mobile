@@ -36,6 +36,13 @@
       },
       "apiUrl": "https://appointment-scheduling-backend-wrx5.onrender.com"
     },
-    "owner": "neonael"
+    "owner": "neonael",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/3d2bf45e-6b51-42c3-9d5d-8171bbd5701d"
+    },
+    "ios": {}
   }
 }
