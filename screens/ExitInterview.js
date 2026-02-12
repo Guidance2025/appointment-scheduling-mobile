@@ -23,7 +23,7 @@ const VIEW_LIST   = "list";
 const VIEW_ANSWER = "answer";
 
 // ─── Component ───────────────────────────────────────────────────────────────
-const ExitInterview = ({ navigation }) => {
+const ExitInterview = ({ navigation, onClose }) => {
   const [view, setView]             = useState(VIEW_LIST);
   const [questions, setQuestions]   = useState([]);
   const [selected, setSelected]     = useState(null);   // currently-open question
@@ -41,6 +41,37 @@ const ExitInterview = ({ navigation }) => {
     if (!token) return null;
     return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
   };
+
+  // Handle close with multiple fallback options
+  const handleClose = useCallback(() => {
+    try {
+      // First try onClose prop if provided (Modal usage)
+      if (onClose && typeof onClose === 'function') {
+        onClose();
+        return;
+      }
+      
+      // Then try navigation.goBack (Navigation stack usage)
+      if (navigation?.goBack) {
+        navigation.goBack();
+        return;
+      }
+      
+      // Then try navigation.navigate as last resort
+      if (navigation?.navigate) {
+        navigation.navigate('Dashboard');
+        return;
+      }
+      
+      console.warn('No close method available - component may be rendered outside navigation context');
+    } catch (error) {
+      console.error('Close error:', error);
+      // If all else fails and onClose exists, use it
+      if (onClose) {
+        onClose();
+      }
+    }
+  }, [navigation, onClose]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // Fetch unanswered questions (visibility-filtered by backend)
@@ -82,13 +113,27 @@ const ExitInterview = ({ navigation }) => {
     }
   }, []);
 
-  // Auto-refresh when screen gains focus
-  useFocusEffect(
-    useCallback(() => {
-      fetchQuestions();
-      return () => {};
-    }, [fetchQuestions])
-  );
+  // Auto-refresh when screen gains focus (only if using navigation)
+  // Wrap in try-catch to handle cases where navigation context doesn't exist
+  React.useEffect(() => {
+    // Always fetch on mount
+    fetchQuestions();
+    
+    // Only setup focus listener if navigation exists
+    if (navigation && useFocusEffect) {
+      try {
+        const unsubscribe = useFocusEffect(
+          useCallback(() => {
+            fetchQuestions();
+            return () => {};
+          }, [fetchQuestions])
+        );
+        return unsubscribe;
+      } catch (error) {
+        console.log('Navigation focus effect not available, using mount-only fetch');
+      }
+    }
+  }, [navigation, fetchQuestions]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // Submit answer
@@ -198,7 +243,7 @@ const ExitInterview = ({ navigation }) => {
           <Text style={styles.modalTitle}>Exit Interview</Text>
           <TouchableOpacity
             style={styles.closeButton}
-            onPress={() => navigation?.goBack?.()}
+            onPress={handleClose}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="close" size={28} color="#1B5E20" />

@@ -12,7 +12,7 @@ import MoodTrend from "./screens/MoodTrend";
 import ContentHub from "./screens/ContentHub";
 
 messaging().setBackgroundMessageHandler(async remoteMessage => {
-  console.log('📩 Background notification received:', remoteMessage);
+  console.log(' Background notification received:', remoteMessage);
   
   const { notification, data } = remoteMessage;
   console.log('Title:', notification?.title);
