@@ -1,4 +1,4 @@
-export const API_BASE_URL = `http://192.168.254.165:8080`;
+export const API_BASE_URL = "https://appointment-scheduling-backend-wrx5.onrender.com";
 
 export const REGISTER_FCM_TOKEN = `${API_BASE_URL}/notification/registerToken`;
 
